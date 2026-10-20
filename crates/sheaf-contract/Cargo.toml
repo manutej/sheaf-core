@@ -1,0 +1,17 @@
+# sheaf-contract (formerly sheaf-base): the m1 core, SPEC v1.18 (18-round validated, R18 PASS 8/8 + hidden holdout in frontier).
+# LOCKED: src/lib.rs is byte-identical to frontier sheaf-experiments/contract/rust/src/lib.rs and changes only through the gate.
+# Dependency pins are the gated ones (serde =1.0.219, serde_json =1.0.140).
+[package]
+name = "sheaf-contract"
+version = "1.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sheaf_contract"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
