@@ -55,7 +55,10 @@ pub fn h0_relative(d0: &Csr, boundary: &[usize], policy: H0Policy, dense_max: us
     let mut rows_of: Vec<Vec<usize>> = vec![vec![]; blocks.len()];
     for (bi, cols) in blocks.iter().enumerate() { for (q, &c) in cols.iter().enumerate() { col_pos[c] = q; } let _ = bi; }
     for r in 0..d0.nrows {
-        if let Some(c) = (d0.ptr[r]..d0.ptr[r + 1]).map(|k| d0.idx[k]).find(|&c| !is_b[c]) { rows_of[block_of[find(&mut p, c)]].push(r); }
+        // ADR-017 round 2 (P-NUM-02): a row belongs to the block of its first NONZERO interior entry. Explicitly stored
+        // zeros (m1 coboundary on a cancelling self-loop, any hand-built CSR) are not couplings: picking the first stored
+        // entry put the row into the wrong block and returned a "kernel" vector with δg ≠ 0.
+        if let Some(c) = (d0.ptr[r]..d0.ptr[r + 1]).filter(|&k| d0.val[k] != 0.0).map(|k| d0.idx[k]).find(|&c| !is_b[c]) { rows_of[block_of[find(&mut p, c)]].push(r); }
     }
     let (mut basis_cols, mut cuts) = (vec![], vec![]);
     let (mut kept_min, mut drop_max) = (None::<f64>, None::<f64>);
@@ -64,7 +67,7 @@ pub fn h0_relative(d0: &Csr, boundary: &[usize], policy: H0Policy, dense_max: us
         let rows = &rows_of[bi];
         let mut b = Mat::<f64>::zeros(rows.len(), cols.len());
         let mut t = vec![];
-        for (i, &r) in rows.iter().enumerate() { for k in d0.ptr[r]..d0.ptr[r + 1] { let c = d0.idx[k]; if !is_b[c] { b[(i, col_pos[c])] += d0.val[k]; } } }
+        for (i, &r) in rows.iter().enumerate() { for k in d0.ptr[r]..d0.ptr[r + 1] { let c = d0.idx[k]; if !is_b[c] && d0.val[k] != 0.0 { b[(i, col_pos[c])] += d0.val[k]; } } }   // all nonzero interior entries of a row share its block (union above)
         for i in 0..b.nrows() { for j in 0..b.ncols() { if b[(i, j)] != 0.0 { t.push((i, j, b[(i, j)])); } } }
         let cut = policy.zero_tol(HodgeOp::l0(&Csr::from_triplets(b.nrows(), b.ncols(), t)).norm_bound()); cuts.push(cut);
         let sv = svd_full(&b);
