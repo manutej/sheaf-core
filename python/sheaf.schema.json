@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontier.local/sheaf-spec/v1.18",
+  "title": "FRONTIER cellular sheaf spec v1.18",
+  "type": "object",
+  "required": ["d", "nodes", "x", "edges", "maps"],
+  "additionalProperties": false,
+  "properties": {
+    "d": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/node"}},
+    "x": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "maps": {"type": "object", "propertyNames": {"$ref": "#/$defs/edgeType"},
+      "additionalProperties": {"type": "array", "minItems": 2, "maxItems": 2,
+        "items": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}}}
+  },
+  "$defs": {
+    "edgeType": {"enum": ["about", "related", "logged", "claim_of", "same_slug"]},
+    "status": {"enum": ["verified", "partly verified", "search-verified", "claimed", "unverified", "refuted", "not found"]},
+    "node": {
+      "type": "object", "required": ["id", "kind"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[0-9a-f]{32}(c[0-9]+)?$", "not": {"pattern": "\\s"}},
+        "kind": {"enum": ["source", "topic", "claim", "log"]},
+        "slug": {"type": ["string", "null"]}, "title": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]}, "url": {"type": ["string", "null"]},
+        "parent": {"type": ["string", "null"], "pattern": "^[0-9a-f]{32}$", "not": {"type": "string", "pattern": "\\s"}}, "fetched": {"type": ["string", "null"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "source"}}},
+         "then": {"required": ["slug", "status", "url"], "properties": {"status": {"$ref": "#/$defs/status"},
+                  "url": {"type": "string", "pattern": "^https?://"}, "slug": {"type": "string", "minLength": 1}}}},
+        {"if": {"properties": {"kind": {"not": {"const": "claim"}}}}, "then": {"properties": {"id": {"pattern": "^[0-9a-f]{32}$"}}}},
+        {"if": {"properties": {"kind": {"const": "claim"}}}, "then": {"required": ["parent"], "properties": {"parent": {"type": "string"}, "id": {"pattern": "^[0-9a-f]{32}c[0-9]+$"}}}}
+      ]
+    },
+    "edge": {"type": "object", "required": ["u", "v", "type"], "additionalProperties": false,
+      "properties": {"u": {"type": "integer", "minimum": 0}, "v": {"type": "integer", "minimum": 0}, "type": {"$ref": "#/$defs/edgeType"}}}
+  }
+}
