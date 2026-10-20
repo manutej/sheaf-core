@@ -1,0 +1,8 @@
+/target/
+**/target/
+__pycache__/
+*.pyc
+.pytest_cache/
+python/parity/parity_result.json
+out/
+docs/ANTI_CHEAT.md

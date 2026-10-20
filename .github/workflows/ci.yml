@@ -1,0 +1,29 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85.1
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo build
+        run: cargo build --release --workspace --all-targets --locked
+      - name: cargo test --release
+        run: cargo test --release --workspace --locked
+      - name: sheaf-contract is byte-identical to the gated m1 crate
+        run: echo "7128f2b41d77831fe768afc6f20dd604438cef97b3e2782d89d9421f576976de  crates/sheaf-contract/src/lib.rs" | sha256sum -c -
+      # Advisory until the code is formatted once (ROADMAP 4). sheaf-contract is never reformatted (locked).
+      - name: crate DAG (cell -> {cohom, solve} -> cli; contract -> cli)
+        run: |
+          cargo tree -p sheaf-solve -e normal --prefix none | grep -q '^sheaf-cohom' && { echo "sheaf-solve must not depend on sheaf-cohom"; exit 1; } || true
+          cargo tree -p sheaf-cell -e normal --prefix none | grep -Eq '^sheaf-(contract|cohom|solve|cli) ' && { echo "sheaf-cell must be the bottom crate"; exit 1; } || true
+          cargo tree -p sheaf-contract -e normal --prefix none | grep -q '^faer ' && { echo "sheaf-contract must stay faer-free"; exit 1; } || true
+      - name: cargo fmt --check (advisory)
+        continue-on-error: true
+        run: cargo fmt --check -p sheaf-cell -p sheaf-cohom -p sheaf-solve -p sheaf-cli
+      - name: cargo clippy (advisory)
+        continue-on-error: true
+        run: cargo clippy --workspace --all-targets --locked

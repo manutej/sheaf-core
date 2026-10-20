@@ -1,0 +1,7 @@
+# Inputs for sheaf-base's gated tests (lib.rs reads these env vars; the file stays byte-identical to the gated crate).
+# Fixtures are SYNTHETIC (python/m1/make_fixtures.py); the frontier gate runs the same tests on its frozen private spec.
+[env]
+SPEC_JSON = { value = "fixtures/m1/spec.json", relative = true }
+MUTATIONS_JSON = { value = "fixtures/m1/mutations.json", relative = true }
+PY_DISCORD = { value = "fixtures/m1/py_discord.json", relative = true }
+PY_DISCORD_RAND = { value = "fixtures/m1/py_discord_rand.json", relative = true }
