@@ -6,3 +6,4 @@ __pycache__/
 python/parity/parity_result.json
 out/
 docs/ANTI_CHEAT.md
+python/m1/libsheaf_cli.so
