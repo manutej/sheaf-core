@@ -10,6 +10,8 @@ publish.workspace = true
 [lib]
 name = "sheaf_cli"
 path = "src/lib.rs"
+# cdylib: the C ABI in src/ffi.rs, loaded by the Rust-backed m1 builder shim (python/m1/sheafimpl_rs.py, ADR-016)
+crate-type = ["rlib", "cdylib"]
 
 [[bin]]
 name = "sheaf"
