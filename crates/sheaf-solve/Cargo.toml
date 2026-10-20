@@ -1,0 +1,16 @@
+# sheaf-solve: harmonic extension (certified residual, dense Cholesky / CG). Depends on sheaf-cell ONLY (never sheaf-cohom).
+[package]
+name = "sheaf-solve"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+sheaf-cell.workspace = true
+
+[dev-dependencies]
+faer.workspace = true
+proptest.workspace = true
