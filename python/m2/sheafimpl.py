@@ -23,10 +23,15 @@ sheaf-cell::m1 / sheaf-cohom::m1, C ABI in sheaf-cli/src/ffi.rs): the coboundary
 residuals, x^T L x, the component split, the per-component SVD / eigenvalues and the R-H0-08 cut (the single typed
 H0Policy, variants m1_global_svd / m1_global_eig). The native library is reached ONLY through the contract-owned pinned
 loader module sheaf_native (hash-checked load of the one fixed library next to it); this module has no foreign-function
-interface, no path handling and no process creation of its own, and writes no files."""
+interface, no path handling beyond the §6(1) self-insert for that one import, and no process creation of its own, and writes no files."""
 import math
 import numpy as np, scipy.sparse as sp
-import sheaf_native as _native   # the pinned loader (R-M2-LOAD); an unpinned / tampered library fails this import
+import os as _os, sys as _sys
+# SPEC_ADDENDUM §6(1): the gate imports this file by path under `python -I`, so its own dir is not on sys.path;
+# put it first only for the pinned-loader import and remove it afterwards (the one permitted import mechanism).
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+try: import sheaf_native as _native   # the pinned loader (R-M2-LOAD); an unpinned / tampered library fails this import
+finally: del _sys.path[0]
 
 _LIB = _native.LIB
 _I, _D, _P = _native.I64, _native.F64, _native.PTR
