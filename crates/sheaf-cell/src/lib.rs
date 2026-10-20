@@ -7,6 +7,7 @@
 pub mod complex;
 pub mod fixtures;
 pub mod graph;
+pub mod m1;
 pub mod num;
 pub mod ops;
 pub mod sheaf;
