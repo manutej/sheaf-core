@@ -1,0 +1,28 @@
+# sheaf-cli: composes cell + cohom + solve + contract (m1 adapter). Pure analyze core (v1: returns (Report, Vec<Effect>)) + the `sheaf` binary (imperative shell, ADR-005).
+[package]
+name = "sheaf-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sheaf_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sheaf"
+path = "src/main.rs"
+
+[dependencies]
+faer.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sheaf-cell.workspace = true
+sheaf-cohom.workspace = true
+sheaf-contract.workspace = true
+sheaf-solve.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
