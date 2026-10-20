@@ -22,11 +22,12 @@ with its M: tag; only the MATH is delegated, in-process via ctypes, to the Rust 
 file; crates sheaf-cell::m1 / sheaf-cohom::m1, C ABI in sheaf-cli/src/ffi.rs): the coboundary assembly, delta^T delta,
 the discord residuals, x^T L x, the component split, the per-component SVD / eigenvalues and the R-H0-08 cut (the single
 typed H0Policy, variants m1_global_svd / m1_global_eig). No subprocess, no file writes."""
-import math, ctypes, os
+import math
+import ctypes as _ctypes, os as _os   # private names: the public module surface equals the reference's
 import numpy as np, scipy.sparse as sp
 
-_LIB = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), "libsheaf_cli.so"))
-_I, _D, _P = ctypes.c_int64, ctypes.c_double, ctypes.c_void_p
+_LIB = _ctypes.CDLL(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "libsheaf_cli.so"))
+_I, _D, _P = _ctypes.c_int64, _ctypes.c_double, _ctypes.c_void_p
 _SIG = {"sheaf_m1_abi_version": "", "sheaf_m1_coboundary": "iPiPPPPiPiiPPP", "sheaf_m1_laplacian_nnz": "iiiPPP",
         "sheaf_m1_laplacian": "iiiPPPiPPP", "sheaf_m1_edge_discord_csr": "iiiPPPPiPP", "sheaf_m1_edge_discord_dense": "iiPPiPP",
         "sheaf_m1_energy_csr": "iiiPPPPP", "sheaf_m1_energy_dense": "iPPP", "sheaf_m1_components": "iiiPPPP",
@@ -51,12 +52,16 @@ def _csr_args(A):
     if A.indptr.shape != (m + 1,) or nnz < 0 or nnz > min(A.indices.shape[0], A.data.shape[0]):   # no length channel across the C ABI
         raise ValueError("R-DIM-02: malformed CSR operator (indptr / indices / data lengths disagree)")
     return (m, int(A.shape[1]), nnz, _iv(A.indptr), _iv(A.indices[:nnz]), _fv(A.data[:nnz]))
+def _csr_out(cls, val, idx, ptr, shape):
+    """Wrap Rust CSR output like scipy builds it: int32 index arrays when they fit (else int64), for csr_matrix AND csr_array."""
+    it = np.int32 if max(int(ptr[-1]), int(max(shape))) <= np.iinfo(np.int32).max else np.int64
+    return cls((val, idx.astype(it, copy=False), ptr.astype(it, copy=False)), shape=shape)
 def _rs_coboundary(dv, U, V, de, FU, FV, cap):
     nr, nc = int(sum(int(k) for k in de)), int(sum(int(k) for k in dv))
     fu = np.concatenate(FU) if FU else np.zeros(0); fv = np.concatenate(FV) if FV else np.zeros(0); fu, fv = _fv(fu), _fv(fv)
     ptr = np.empty(nr + 1, np.int64); idx = np.empty(cap, np.int64); val = np.empty(cap)
     nnz = _rs("sheaf_m1_coboundary", len(dv), _iv(dv), len(U), _iv(U), _iv(V), _iv(de), fu, fu.size, fv, fv.size, cap, ptr, idx, val)
-    return sp.csr_matrix((val[:nnz], idx[:nnz], ptr), shape=(nr, nc))
+    return _csr_out(sp.csr_matrix, val[:nnz], idx[:nnz], ptr, (nr, nc))
 RANK_TOL = 1e-9; EIG_TOL = 1e-10; MAX_DENSE_DIM = 5000; MAX_DENSE_BYTES = 2 * 2**30
 
 MAX_TOTAL_DIM = 2**31 - 1
@@ -174,10 +179,11 @@ def laplacian(delta):
     _op_guard(delta)   # v1.10 (R9 security): before transpose/indptr allocation; v1.12: dense operators too
     delta = delta.tocsr() if sp.issparse(delta) else sp.csr_matrix(delta)   # storage O(nnz), admitted by _op_guard above
     _gram_guard(delta)   # v1.13 (R12 security); untagged on purpose: an unguarded mutant needs a >= 2**28-nnz Gram to observe, killed only by the direct-core test test_R_PERF_18_core_gram_output_capped (monkeypatched cap) and the builder test test_R_PERF_18_gram_output_capped
+    if delta.dtype != np.float64: return (delta.T @ delta).tocsr()   # reference line: L keeps delta's dtype (int, float32, complex, ...)
     a = _csr_args(delta); n = a[1]; cap = _rs("sheaf_m1_laplacian_nnz", *a)   # Rust: sheaf_cell::m1::laplacian (Gustavson)
     ptr = np.empty(n + 1, np.int64); idx = np.empty(cap, np.int64); val = np.empty(cap)
     nnz = _rs("sheaf_m1_laplacian", *a, cap, ptr, idx, val)
-    return sp.csr_matrix((val[:nnz], idx[:nnz], ptr), shape=(n, n))
+    return _csr_out(type(delta), val[:nnz], idx[:nnz], ptr, (n, n))   # csr_matrix or csr_array, like delta.T @ delta
 
 def _check_x(delta, x):
     """x: 1-d, length delta.shape[1], finite. v1.13 (R12 security): an ndarray x is shape-checked from .shape BEFORE any
@@ -200,9 +206,12 @@ def edge_discord(delta, x, de):
     if not all(_is_int(k) and k >= 0 for k in de_l) or sum(int(k) for k in de_l) != delta.shape[0]: raise ValueError("R-DIM-02: edge dims must be non-negative integers summing to delta's row count")  # M:de_consistent
     de = np.asarray(de_l, dtype=np.int64)
     if de.ndim != 1 or (de < 0).any() or int(de.sum()) != delta.shape[0]: raise ValueError("R-DIM-02: edge dims must be >= 0 and sum to delta's row count")  # defence in depth for the SUM only (after int64 coercion it cannot reject 1.7 / True): NOT equivalent to M:de_consistent, whose exact-int check is the one that rejects non-integer dims
-    x = _fv(_check_x(delta, x)); out = np.empty(len(de))                         # Rust: sheaf_cell::m1::edge_discord
-    if sp.issparse(delta): _rs("sheaf_m1_edge_discord_csr", *_csr_args(delta.tocsr()), x, len(de), _iv(de), out)
-    else: A = _fv(delta); _rs("sheaf_m1_edge_discord_dense", A.shape[0], A.shape[1], A, x, len(de), _iv(de), out)
+    x = _check_x(delta, x)
+    if not _rs_f64(delta.dtype):                                                  # reference lines (see the dtype rule)
+        r = delta @ x
+        out = np.bincount(np.repeat(np.arange(len(de)), de), weights=r * r, minlength=len(de)).astype(float)
+    elif sp.issparse(delta): out = np.empty(len(de)); x = _fv(x); _rs("sheaf_m1_edge_discord_csr", *_csr_args(delta.tocsr()), x, len(de), _iv(de), out)
+    else: out = np.empty(len(de)); x = _fv(x); A = _fv(delta); _rs("sheaf_m1_edge_discord_dense", A.shape[0], A.shape[1], A, x, len(de), _iv(de), out)
     if not np.isfinite(out).all(): raise ValueError("R-FINITE-01: discord overflows float64 (finite inputs, non-finite residual)")   # v1.10 # M:discord_overflow
     return out
 
@@ -212,7 +221,7 @@ def energy(L, x):
     if sp.issparse(L) and L.format in ("dok", "lil"): L = L.tocsr()   # v1.18 (R17 security minor): as in edge_discord
     if not np.isfinite(L.data if sp.issparse(L) else np.asarray(L)).all(): raise ValueError("R-FINITE-01: L must be finite")   # v1.7 # M:energy_L_finite
     x = np.asarray(x, float)
-    if L.shape[0] != L.shape[1]: e = float(x @ (L @ x))     # non-square: the reference's own (numpy) shape error, unchanged
+    if L.shape[0] != L.shape[1] or not _rs_f64(L.dtype): e = float(x @ (L @ x))   # reference line: non-square (its numpy shape error) or a non-float64-exact dtype
     else:                                                    # Rust: sheaf_cell::m1::energy
         out = np.empty(1)
         if sp.issparse(L): _rs("sheaf_m1_energy_csr", *_csr_args(L.tocsr()), _fv(x), out)
@@ -220,6 +229,33 @@ def energy(L, x):
         e = float(out[0])
     if not math.isfinite(e): raise ValueError("R-FINITE-01: energy overflows float64 (finite inputs, non-finite result)")   # v1.10 # M:energy_overflow
     return e
+
+# ---- dtype rule (ADR-016 addendum): the Rust core computes in float64. It is used exactly where the reference itself
+# computes in float64: float64 data, and bool / integer data that numpy / scipy upcast to float64 (matvec with a float64
+# x, np.linalg.svd / eigvalsh of an integer array). Every other dtype (float32 / float16 -> single-precision LAPACK,
+# complex, longdouble, object) and laplacian on any non-float64 delta (whose output keeps delta's dtype) run the
+# reference's own numpy / scipy lines verbatim (_ref_* below), so dtype, values and errors are the reference's.
+def _rs_f64(dt): return dt == np.float64 or dt.kind in "biu"
+def _ref_components(A, n): return _components(A, n)
+from scipy.sparse.csgraph import connected_components
+def _components(A, n):
+    """Column groups coupled through A (connected components of the bipartite row/column incidence graph).
+    Uses only A's sparsity pattern (no Gram matrix, no fill-in)."""
+    if n == 0: return []
+    m = A.shape[0]; r, c = A.nonzero()                  # nonzero() drops explicitly stored zeros, so size the data from it
+    P = sp.csr_matrix((np.ones(len(r)), (r, c)), shape=(m, n)) if m else sp.csr_matrix((0, n))
+    B = sp.bmat([[None, P], [P.T, None]], format="csr") if m else sp.csr_matrix((n, n))
+    k, lab = connected_components(B, directed=False); lab = lab[m:] if m else lab
+    order = np.argsort(lab, kind="stable"); cuts = np.flatnonzero(np.diff(lab[order])) + 1
+    return np.split(order, cuts)
+
+def _dense_block(delta, cols):
+    sub = delta[:, cols]; rows = np.unique(sub.nonzero()[0])
+    if _svd_bytes(len(rows), len(cols)) > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense SVD of {len(rows)}x{len(cols)} block exceeds MAX_DENSE_BYTES")  # defence in depth (fires only when this component is reached); pass-0 M:svd_byte_cap is the before-any-densification check
+    if len(rows) == 0: return None
+    D = sub[rows].toarray()
+    if D.shape[0] < D.shape[1]: D = np.vstack([D, np.zeros((D.shape[1] - D.shape[0], D.shape[1]))])   # pad so thin SVD yields all n right vectors
+    return D
 
 def _svd_bytes(m, n):
     M = max(m, n); return 8 * (2 * M * n + 6 * n * n)        # padded block + U + Vt + LAPACK workspace (upper bound)
@@ -238,12 +274,37 @@ def global_sections(delta, tol=RANK_TOL):
     for ncols, nrows in comps:                           # pass 0: validate limits for every component before any SVD
         if ncols > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {ncols} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")  # M:svd_dim_cap
         if _svd_bytes(nrows, ncols) > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense SVD of {nrows}x{ncols} block exceeds MAX_DENSE_BYTES")  # M:svd_byte_cap
+    if not _rs_f64(delta.dtype): return _ref_gs_passes(delta, n, tol)   # float32 / complex / ...: the reference's passes 1-2
     rk = np.empty(n, np.int64); _rs("sheaf_m1_gs_ranks", *a, float(tol), rk)   # pass 1 (Rust): singular values only, H0Policy::m1_svd(tol)
     ranks = [int(r) for r in rk[:k]]
     N = sum(c - r for (c, _), r in zip(comps, ranks))
     if 8 * n * N > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense basis {n}x{N} exceeds MAX_DENSE_BYTES")  # M:basis_bytes
     G = np.zeros((n, N))                                 # pass 2 (Rust): one component dense at a time, V only
     if _rs("sheaf_m1_gs_fill", *a, _iv(ranks), len(ranks), G, N) != N: raise RuntimeError("sheaf_m1_gs_fill: basis width mismatch")
+    return G
+
+def _ref_gs_passes(delta, n, tol):
+    """The reference's passes 1-2 verbatim (pass 0 already ran above on the same components)."""
+    comps = _ref_components(delta, n)
+    svs = []
+    for cols in comps:                                   # pass 1: singular values only
+        D = _dense_block(delta, cols)
+        svs.append(np.linalg.svd(D, compute_uv=False) if D is not None else np.zeros(0)); del D
+    smax = max((float(v.max()) for v in svs if v.size), default=0.0); thr = tol * max(1.0, smax)
+    ranks = []
+    for sv in svs: r = int((sv > thr).sum()); ranks.append(r)
+    N = sum(len(c) - r for c, r in zip(comps, ranks))
+    if 8 * n * N > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense basis {n}x{N} exceeds MAX_DENSE_BYTES")  # same check as the tagged basis_bytes line in global_sections (untagged copy for the fallback path)
+    G = np.zeros((n, N)); k = 0
+    for cols, r in zip(comps, ranks):                    # pass 2: one component dense at a time
+        D = _dense_block(delta, cols); w = len(cols) - r
+        if D is None:                                    # no incident rows: every coordinate of the component is a section
+            G[np.asarray(cols), k + np.arange(len(cols))] = 1.0  # v1.8: scatter, no ambient n-vector per isolated column
+        else:
+            Vt = np.linalg.svd(D, full_matrices=False)[2]  # v1.7: U/S not kept alive into the next component
+            G[cols, k:k + w] = Vt[r:].T; del Vt
+        del D                                            # v1.8: component i's dense block is freed BEFORE component i+1 is densified
+        k += w
     return G
 
 def h0_dim_from_L(L, tol=EIG_TOL):
@@ -259,6 +320,11 @@ def h0_dim_from_L(L, tol=EIG_TOL):
     for ncols in groups:                                 # all limits checked before any densification
         if ncols > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {ncols} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")  # M:eig_dim_cap
         if 8 * 3 * ncols ** 2 > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense eig of dim {ncols} exceeds MAX_DENSE_BYTES")  # non-binding under the 5000-dim cap (SPEC R-PERF-18 note); kept as defence
+    if not _rs_f64(L.dtype):                             # reference lines (see the dtype rule)
+        r, c = L.nonzero(); k, lab = connected_components(sp.csr_matrix((np.ones(len(r)), (r, c)), shape=L.shape), directed=False); ws = []
+        order = np.argsort(lab, kind="stable"); groups = np.split(order, np.flatnonzero(np.diff(lab[order])) + 1)
+        for cols in groups: ws.append(np.linalg.eigvalsh(L[cols][:, cols].toarray()))
+        w = np.concatenate(ws); thr = tol * max(1.0, float(abs(w).max())); return int((w <= thr).sum())
     return _rs("sheaf_m1_h0_dim", *a, float(tol))        # Rust: per-component eigenvalues + H0Policy::m1_eig(tol)
 
 def _is_num(v): return isinstance(v, (int, float)) and not isinstance(v, bool)

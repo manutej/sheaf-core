@@ -81,6 +81,59 @@ for k in range(20):
     if abs(P.energy(A.T @ A, x) - R.energy(A.T @ A, x)) > 1e-9 * max(1.0, float(dp.sum())): bad.append((f"dup{k}", "energy"))
 cmp("cancel", [1, 1], [(0, 1, [[1.0]], [[1.0]]), (0, 1, [[1.0]], [[-1.0]])], np.array([0.3, -0.7]))
 cmp("self_loop", [2, 1], [(0, 0, [[1.0, 2.0]], [[1.0, 0.5]]), (0, 1, [[0.0, 1.0]], [[2.0]]), (1, 1, [[3.0]], [[3.0]])], np.array([1.0, -2.0, 0.5]))
+# observable parity (dtype rule, ADR-016 addendum): output type, dtype, shape, sparse class / index dtype / canonical flag,
+# scalar type, exception class + message -- across int, bool, float32, float64 (and complex where the reference accepts it),
+# sparse classes (csr/csc/coo matrix, csr_array) and dense ndarrays, plus list / int / float32 x.
+n_obs = 0
+def sig(v):
+    if sp.issparse(v): return ("sparse", type(v).__name__, v.dtype.str, v.shape, v.indices.dtype.str, v.indptr.dtype.str, bool(v.has_canonical_format))
+    if isinstance(v, np.ndarray): return ("ndarray", v.dtype.str, v.shape)
+    if isinstance(v, tuple): return ("tuple", len(v))
+    return (type(v).__name__,)
+def same(name, fp, fr, *args, tol=1e-9):
+    global n_obs; n_obs += 1
+    try: a = fp(*args); ea = None
+    except Exception as e: a, ea = None, (type(e).__name__, str(e))
+    try: b = fr(*args); eb = None
+    except Exception as e: b, eb = None, (type(e).__name__, str(e))
+    if ea or eb:
+        if ea != eb: bad.append((name, "exception", ea, eb))
+        return
+    if sig(a) != sig(b): bad.append((name, "type/dtype/shape", sig(a), sig(b))); return
+    if sp.issparse(a): a, b = a.toarray(), b.toarray()
+    if isinstance(a, np.ndarray) and a.size and a.dtype.kind in "fc":
+        if name.startswith("gs"): a, b = a @ a.conj().T, b @ b.conj().T      # basis: compare projectors
+        eps = np.finfo(a.dtype).eps if a.dtype.kind in "fc" else 0
+        if not np.allclose(a, b, rtol=max(tol, 64 * eps), atol=max(1e-12, 64 * eps * max(1.0, float(np.abs(a).max())))): bad.append((name, "values"))
+    elif isinstance(a, np.ndarray):
+        if not np.array_equal(a, b): bad.append((name, "values"))
+    elif isinstance(a, float):
+        if abs(a - b) > tol * max(1.0, abs(a)): bad.append((name, "values", a, b))
+    elif a != b: bad.append((name, "values", a, b))
+for k in range(12):
+    m, n = int(rng.integers(1, 7)), int(rng.integers(1, 7))
+    base = rng.integers(-3, 4, (m, n)); base[rng.random((m, n)) < 0.4] = 0
+    xs = {"f64": rng.normal(size=n), "list": rng.normal(size=n).tolist(), "int": rng.integers(-2, 3, n), "f32": rng.normal(size=n).astype(np.float32)}
+    for dt in (np.int64, np.int32, np.bool_, np.float32, np.float64, np.complex128):
+        A = base.astype(dt)
+        for kind, op in (("dense", A), ("csr", sp.csr_matrix(A)), ("csc", sp.csc_matrix(A)), ("coo", sp.coo_matrix(A)), ("csr_array", sp.csr_array(A))):
+            tag = f"{k}/{np.dtype(dt).name}/{kind}"
+            same("lap " + tag, P.laplacian, R.laplacian, op)
+            same("gs " + tag, P.global_sections, R.global_sections, op)
+            same("gs-tol " + tag, P.global_sections, R.global_sections, op, 1e-3)
+            for xn, x in xs.items(): same(f"discord {tag}/{xn}", P.edge_discord, R.edge_discord, op, x, [1] * m)
+            Lop = (sp.csr_matrix(A).T @ sp.csr_matrix(A)) if kind != "dense" else A.T @ A
+            if kind == "csc": Lop = sp.csc_matrix(Lop)
+            same("h0 " + tag, P.h0_dim_from_L, R.h0_dim_from_L, Lop)
+            for xn, x in xs.items(): same(f"energy {tag}/{xn}", P.energy, R.energy, Lop, x)
+    dv = [int(rng.integers(0, 3)) for _ in range(4)]
+    E = [(int(rng.integers(0, 4)), int(rng.integers(0, 4))) for _ in range(5)]
+    for mk in (lambda a: a, lambda a: a.astype(np.float32), lambda a: a.astype(np.int64), lambda a: a.tolist()):
+        edges = [(u, v, mk(rng.integers(-2, 3, (2, dv[u]))), mk(rng.integers(-2, 3, (2, dv[v])))) for u, v in E]
+        same(f"cob {k}", P.coboundary, R.coboundary, dv, edges)
+        same(f"cob-uniform {k}", P.coboundary, R.coboundary, [2] * 4, [(u, v, mk(rng.integers(-2, 3, (2, 2))), mk(rng.integers(-2, 3, (2, 2)))) for u, v in E])
+same("from_spec", lambda s: sig(P.from_spec(s)[2]), lambda s: sig(R.from_spec(s)[2]), json.loads((ROOT / "fixtures/m1/spec.json").read_text()))
+same("offsets", P.offsets, R.offsets, [1, 2, 0])
 # error-path parity: same exception type and message
 Z = np.zeros((2, 2)); I1 = [[1.0]]
 BAD = [("coboundary", ([1, 1], [(0, 1, [[np.inf]], I1)])), ("coboundary", ([1, 1], [(0, 2, I1, I1)])), ("coboundary", ([1, -1], [])),
@@ -97,7 +150,7 @@ BAD = [("coboundary", ([1, 1], [(0, 1, [[np.inf]], I1)])), ("coboundary", ([1, 1
 for fn, args in BAD:
     n_err += 1; a, b = err(getattr(P, fn), *args), err(getattr(R, fn), *args)
     if a != b or a is None: bad.append((fn, "error parity", a, b))
-print(json.dumps(dict(value_cases=n_val, error_cases=n_err, max_abs_delta=W["delta"], max_rel_L=W["L"], max_rel_discord=W["discord"],
+print(json.dumps(dict(value_cases=n_val, error_cases=n_err, observable_cases=n_obs, max_abs_delta=W["delta"], max_rel_L=W["L"], max_rel_discord=W["discord"],
                       max_abs_energy=W["energy"], max_abs_projector=W["proj"], mismatches=len(bad))))
 for b in bad: print("MISMATCH", b)
 sys.exit(1 if bad else 0)
