@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sheaf-cell",
+    "crates/sheaf-cohom",
+    "crates/sheaf-solve",
+    "crates/sheaf-contract",
+    "crates/sheaf-cli",
+]
+# DAG (ADR-014): cell -> {cohom, solve} -> cli; contract -> cli. No other edges.
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.85.1"
+license = "LicenseRef-Proprietary"
+publish = false
+
+[workspace.dependencies]
+faer = { version = "0.24", default-features = false, features = ["std", "linalg", "sparse", "rayon"] }
+rayon = "1"
+serde = { version = "=1.0.219", features = ["derive"] }
+serde_json = "=1.0.140"
+proptest = "~1.6"
+sheaf-cell = { path = "crates/sheaf-cell" }
+sheaf-cohom = { path = "crates/sheaf-cohom" }
+sheaf-solve = { path = "crates/sheaf-solve" }
+sheaf-contract = { path = "crates/sheaf-contract" }
