@@ -1,0 +1,17 @@
+# sheaf-cohom: H^k, relative H^0(X,B;F), Hodge split, nearest section, spectral (faer), mod-p. Depends on sheaf-cell only.
+[package]
+name = "sheaf-cohom"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+faer.workspace = true
+sheaf-cell.workspace = true
+rayon.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
