@@ -1,8 +1,10 @@
 # Roadmap
 
-1. **Port base to faer (top TODO).** The m1 Rust crate (`sheaf-contract`) does not use faer; m1's δ⁰/L₀/energy/H⁰ are
-   Python-only. Port them to Rust on faer *through the gate* so the gated behaviour stays identical (R-RUST-20 parity,
-   mutation table, hidden holdout). Not done in the repo setup on purpose.
+1. ~~Port base to faer~~ **Done as a port (ADR-016):** m1's δ⁰/L₀/energy/discord/H⁰ in `sheaf_cell::m1` +
+   `sheaf_cohom::m1` (faer dense SVD/EVD), `sheaf_cli::m1::analyze` (R-NONID-04 first) and a C ABI for the
+   Rust-backed builder shim; parity on every m1 fixture and the 114-row table. Next: make the Rust core the gated
+   builder (needs the FRONTIER gate's own lock/data drift fixed first, see ADR-016 "Gate"), and give the review bundle
+   the Rust sources.
 2. ~~Layout decision~~ **Done (ADR-014 accepted):** sheaf-cell / sheaf-cohom / sheaf-solve / sheaf-contract / sheaf-cli,
    harmonic extension in sheaf-solve, relative H⁰(X,B;F) in sheaf-cohom, `sheaf analyze --boundary`.
 3. **Harmonic extension at scale:** relative H⁰ is per-block dense (refuses blocks > `dense_max`); add a sparse
@@ -11,7 +13,7 @@
    as advisory steps. Format sheaf-cell/cohom/solve/cli once with rustfmt, then make both blocking (sheaf-contract stays
    byte-identical to the gate and is excluded from formatting).
 5. **Review flags** (F4 done: `num::family` types; F12 partly: `krylov::SolveTol`) F5 (`ValidSheaf` newtype), F8 (two named spec parsers,
-   m1 vs v1; R-NONID-04 vs identity default), F9 (one sparse `CochainComplex`; faer `SparseRowMat`), F11 (library
+   m1 vs v1; the m1 path follows R-NONID-04 since ADR-016), F9 (one sparse `CochainComplex`; faer `SparseRowMat`), F11 (library
    `expect`s → `Result`), F13 (rayon feature for wasm32).
    sheaf-core uses its own CG (`sheaf_cell::num::krylov`); the graph Hodge CG and the shift-invert inner PCG still have
    their own loops (dedup pending). If faer's matrix-free CG is adopted: use `InitialGuessStatus::MaybeNonZero` (the `Zero` path misreports in 0.24.4);

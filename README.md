@@ -28,10 +28,12 @@ Wording: "certified residual" — each eigenvalue lies within ±residual of a tr
 labelling is a numerical policy; Krylov completeness is not certified. Never "proof", never "certified rank".
 
 ### Does m1 use faer?
-No. The m1 Rust crate (sheaf-contract) depends only on serde/serde_json; m1's δ⁰/L₀/energy/H⁰ exist in the Python
-reference `python/sheafcore.py`. sheaf-cli's `m1` adapter maps an m1 spec onto sheaf-cell, and `tests/contract_parity.rs`
-pins m1 `discord()` to sheaf-cell's δ⁰ per edge. See ROADMAP: **port base to faer** is the top TODO, and must keep m1 behaviour identical
-to the gated version.
+The gated m1 Rust crate (sheaf-contract) still does not (it stays byte-identical: serde mirror, `validate()`,
+`discord()`). Since ADR-016 the m1 math does: `sheaf_cell::m1` (δ⁰, L₀, discord, energy) and `sheaf_cohom::m1`
+(H⁰ by per-component SVD / eigenvalues under the R-H0-08 `H0Policy` variants), composed by `sheaf_cli::m1::analyze`
+(which runs `validate()` first, so R-NONID-04 holds). `sheaf_cli::ffi` exposes it as a C ABI (`libsheaf_cli.so`) for
+`python/m1/sheafimpl_rs.py`, the Rust-backed m1 builder shim. Parity: `cargo test --release -p sheaf-cli --test m1_parity`
+and `python python/m1/rust_parity.py` (copy `target/release/libsheaf_cli.so` next to the shim first).
 
 ## Build and test
 
