@@ -11,7 +11,7 @@
 //!
 //! Family `Exact` (ADR-013): a linear solve of the exact energy, not an ordered/interval approximation.
 //! Certificate (certified residual, ADR-008): relative residual ‖L_II x_I + L_IB x_B‖ / max(‖L_IB x_B‖,
-//! ‖L‖_bound·max(‖x‖, ‖x_start‖), tiny), the energy, iteration count, the route taken (dense Cholesky or CG), and
+//! ‖L_II‖_bound·max(‖x_I‖, ‖x_start,I‖), tiny), the energy, iteration count, the route taken (dense Cholesky or CG), and
 //! `converged` = residual ≤ tol.
 pub use sheaf_cell::num::sparse::Csr;
 use sheaf_cell::num::family::Exact;
@@ -49,11 +49,10 @@ pub enum HarmonicError { BoundaryIndex(usize), DuplicateBoundary(usize), NonFini
 
 /// L x = δᵀ(δx) on the full dof space.
 pub fn apply_l(delta: &Csr, x: &[f64]) -> Vec<f64> { delta.mul_t(&delta.mul(x)) }
-/// Gershgorin-type bound on ‖L‖₂ via ‖δ‖₁‖δ‖∞ ≥ ‖δ‖₂².
-fn l_bound(delta: &Csr) -> f64 {
-    let rinf = (0..delta.nrows).map(|r| (delta.ptr[r]..delta.ptr[r + 1]).map(|k| delta.val[k].abs()).sum::<f64>()).fold(0.0, f64::max);
-    let mut c1 = vec![0.0; delta.ncols];
-    for k in 0..delta.val.len() { c1[delta.idx[k]] += delta.val[k].abs(); }
+/// Gershgorin-type bound ‖δ_I‖₁‖δ_I‖∞ ≥ ‖δ_I‖₂² = ‖L_II‖₂ for δ restricted to the columns with `skip[c] == false`.
+fn l_bound_cols(delta: &Csr, skip: &[bool]) -> f64 {
+    let mut rinf = 0.0f64; let mut c1 = vec![0.0; delta.ncols];
+    for r in 0..delta.nrows { let mut s = 0.0; for k in delta.ptr[r]..delta.ptr[r + 1] { let c = delta.idx[k]; if !skip[c] { s += delta.val[k].abs(); c1[c] += delta.val[k].abs(); } } rinf = rinf.max(s); }
     rinf * c1.into_iter().fold(0.0, f64::max)
 }
 
@@ -75,7 +74,6 @@ pub fn harmonic_extension(delta: &Csr, boundary: &[(usize, f64)], x0: Option<&[f
     }
     if x.iter().any(|v| !v.is_finite()) || delta.val.iter().any(|v| !v.is_finite()) { return Err(HarmonicError::NonFinite); }
     let interior: Vec<usize> = (0..n).filter(|&i| !is_b[i]).collect();
-    let x_start_norm = nrm(&x);
     let ni = interior.len();
     let restrict = |full: &[f64]| -> Vec<f64> { interior.iter().map(|&i| full[i]).collect() };
     let embed = |xi: &[f64], base: &mut Vec<f64>| { for (k, &i) in interior.iter().enumerate() { base[i] = xi[k]; } };
@@ -83,7 +81,11 @@ pub fn harmonic_extension(delta: &Csr, boundary: &[(usize, f64)], x0: Option<&[f
     let mut xb = vec![0.0; n]; for &(i, v) in boundary { xb[i] = v; }
     let b: Vec<f64> = restrict(&apply_l(delta, &xb)).into_iter().map(|v| -v).collect();
     let lii = |v: &[f64]| -> Vec<f64> { let mut f = vec![0.0; n]; embed(v, &mut f); restrict(&apply_l(delta, &f)) };
-    let lb = l_bound(delta);
+    // ADR-017 round 2 (P-NUM-05): Cholesky pivot tolerance, CG breakdown guard and the residual scale use a bound on
+    // L_II (δ restricted to the INTERIOR columns), not on the whole L. With δ = [2^20, 2^-20] and x_0 = 1 on the
+    // boundary, the whole-L bound (2^40) rejected the valid pivot 2^-40, CG stopped at once, and the 2^40-scaled
+    // residual reported converged = true for x_I = 0 (true x_I = -2^40, energy 2^40 instead of 0).
+    let lb = l_bound_cols(delta, &is_b);
     let mut route = Route::Trivial; let (mut iters, mut breakdown) = (0usize, false);
     if ni > 0 {
         let mut done = false;
@@ -105,7 +107,8 @@ pub fn harmonic_extension(delta: &Csr, boundary: &[(usize, f64)], x0: Option<&[f
     let lx = apply_l(delta, &x);
     let res_abs = nrm(&restrict(&lx));
     // scale includes the start: with B = ∅ the answer can be ~0 (no sections) while the start was not
-    let scale = nrm(&b).max(lb * nrm(&x)).max(lb * x_start_norm).max(1e-300);
+    let x_start_i = x0.map_or(0.0, |v| nrm(&interior.iter().map(|&i| v[i]).collect::<Vec<_>>()));
+    let scale = nrm(&b).max(lb * nrm(&restrict(&x))).max(lb * x_start_i).max(1e-300);
     let residual_rel = if ni == 0 { 0.0 } else { res_abs / scale };
     let converged = residual_rel.is_finite() && residual_rel <= o.rtol.max(1e-10);
     let e = energy(delta, &x);

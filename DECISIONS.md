@@ -121,9 +121,24 @@ FRONTIER stays the record for those. ADR-014 and ADR-015 are new here.
   - (c) `options.null_reps` and `dense_max` are uncapped. This is user-requested work, not a crash.
   - (d) m1 `global_sections` on a 4000-column component takes about 2 minutes. There is no timeout, and R-PERF-18 bounds memory, not time.
   - (e) Rust allocation failure aborts the process, and `catch_unwind` cannot catch it. The shim's caps are the only guard.
-- **Mutation score (sampled shard, sheaf-cell::m1 first; run cut by its time budget):**
-  - Before: 28 viable mutants tested, 18 caught + 3 timeout + 7 missed = 75%.
-  - After: the 4 production-relevant survivors are killed, giving 25/28 = 89%. The remaining 3 (`coboundary_nnz_bound` → 0/1 and `!=`→`==`) are equivalent, because the value is only a `Vec::with_capacity` hint.
+- **Mutation score: final, run INCOMPLETE.** cargo-mutants 26.0.0 sampled shard 0/5 (98 mutants) of `sheaf-cell::m1`, `sheaf-cohom::m1`, `tol`, `sheaf-solve` and `relative`. The run hit its 30-minute budget after 50 mutants (`end_time` null in `outcomes.json`).
+  - Before: of the 48 viable mutants, 38 were caught, 3 timed out and 7 were missed, so (38+3)/48 = 85.4%.
+  - After: the 4 production-relevant survivors are killed (`check_edges → Ok(())`, `||→&&` ×2, `Display → Ok(())`), so 45/48 = 93.8%. A targeted rerun also found `check_edges` `*→/` (line 36), which is now killed too.
+  - The remaining 3 survivors (`coboundary_nnz_bound` → 0/1 and `!=`→`==`) behave the same as the original, because the value is only a `Vec::with_capacity` hint.
+  - The other 48 sampled mutants and the 4/5 of the files outside the sample were never run.
+- **Round 2 (2026-10-20 afternoon, Bahia). Each fix has its repro as a regression test that fails on the old code:**
+  - **P-NUM-02 (critical, silent wrong answer): explicit stored zeros in CSR broke `relative::h0_relative`.** A row was assigned to the block of its first STORED interior entry, even when that entry was zero. δ = 1×2 CSR [0.0, 1.0] returned g = e₁ with δg = 1, and with 3 columns the code indexed past a width-1 block. m1's coboundary stores such zeros on cancelling self-loops. **Fix:** rows and block fills use NONZERO entries only. **Tests:** `sheaf-cohom/tests/adversarial.rs::relative_h0_ignores_explicit_zeros`, and `m1_h0_invariant_under_explicit_zeros` for the m1 SVD and eigen routes. **Audit of every other CSR traversal:**
+    - `sheaf_cohom::m1`: components skip zeros; dense blocks are looked up by component column. Tested.
+    - `cohomology::d0_split`: components come from the complex's topology, not the values, so zeros inside a component are harmless.
+    - `spectral` and `hodge_graph`: components come from the graph edges. A zero map only merges blocks, which is safe, and `KnownKernel` needs injective F_u = F_v.
+    - `sparse`, `ops` and `sheaf-solve`: arithmetic only, where a zero contributes 0.
+  - **P-NUM-03 (major, silent wrong answer): `fp::rank_mod_p` overflowed i64 for p > ~3.04e9.** Products of entries reduced mod p overflowed, giving Betti [0,0] instead of [1,1] at p = 4294967291. **Fix:** `mulmod` now uses i128, so every prime up to i64::MAX works. A new `betti_mod_p_checked` returns `FpError::NotPrime` for p < 2 or composite p (deterministic 64-bit Miller–Rabin); `betti_mod_p` returns `.ok()` of it. **Tests:** `betti_mod_p_large_primes`, at p = 4294967291 and at the cap p = 2^63−25.
+  - **P-NUM-04 (major, confirmed): `fp::to_int` accepted NaN (as 0), ±inf and 2^63 (as i64::MAX).** **Fix:** an entry must be finite, satisfy |v| ≤ 2^53, and be an integer. **Test:** `to_int_refuses_nonfinite_and_inexact`.
+  - **P-NUM-05 (major, confirmed): an ill-scaled harmonic extension was certified as converged.** With δ = [2^20, 2^-20] and x₀ = 1 on the boundary, the result was x₁ = 0, energy 2^40 and `converged = true`. The cause was that the Cholesky pivot tolerance, the CG breakdown guard and the residual scale all used ‖L‖'s bound (2^40), not ‖L_II‖'s bound (2^-40). **Fix:** `l_bound_cols` bounds δ restricted to the interior, and the scale is max(‖b‖, ‖L_II‖·‖x_I‖, ‖L_II‖·‖x_start,I‖). The dense route now solves it exactly, and the CG route no longer certifies a non-solution. With B = ∅ the scale is unchanged. **Test:** `sheaf-solve/tests/adversarial.rs`.
+  - **Checks after round 2:**
+    - `cargo test --workspace --release`: 70 passed, 0 failed.
+    - The refreshed `python/m1/libsheaf_cli.so` gives `rust_parity.py` 187 value + 25 error + 4418 observable cases with 0 mismatches.
+    - The `sheaf-contract/src/lib.rs` hash is unchanged.
 
 ## Open items
 - **R-NONID-04 vs v1 identity default (review F8):** resolved for the m1 path by ADR-016 (`sheaf_cli::m1::analyze` enforces R-NONID-04 via `validate()` before any math). Still open: two named parsers (`m1`, `v1`) and the v1 report stating which contract was used.
