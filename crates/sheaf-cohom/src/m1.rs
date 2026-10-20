@@ -11,7 +11,31 @@
 //!   is allocated; one dense block is alive at a time. No iterative solver is used (no CG / LSMR): dense SVD / EVD only.
 //! * The basis of a multi-dimensional kernel is an orthonormal basis of the same subspace as numpy's, not the same
 //!   vectors (singular vectors are unique only up to rotation within a repeated σ); parity is on the projector GGᵀ.
-use faer::{Mat, Side};
+use faer::{Mat, Par};
+use faer::dyn_stack::{MemBuffer, MemStack};
+
+/// ADR-017 (adversarial panel, P-CONC-01): every m1 dense factorisation runs SEQUENTIALLY. faer's default global
+/// parallelism splits the SVD/EVD work by rayon thread count, so the same input gave a different kernel basis G
+/// (max |ΔG| 1.66, same projector) and bitwise-different σ/λ on 1 vs 2 vs 8 threads, i.e. a rank that could flip at the
+/// R-H0-08 cut depending on the machine. Explicit `Par::Seq` also never reads or mutates faer's global setting.
+/// Measured cost on a 4000-column component: none for the SVD (113 s either way), 25 s → 39 s for the eigenvalues.
+pub const M1_PAR: Par = Par::Seq;
+
+fn sv_seq(a: faer::MatRef<'_, f64>) -> Result<Vec<f64>, faer::linalg::svd::SvdError> {
+    use faer::linalg::svd::{svd, svd_scratch, ComputeSvdVectors};
+    let mut s = faer::diag::Diag::<f64>::zeros(a.nrows().min(a.ncols()));
+    let mut buf = MemBuffer::new(svd_scratch::<f64>(a.nrows(), a.ncols(), ComputeSvdVectors::No, ComputeSvdVectors::No, M1_PAR, Default::default()));
+    svd(a, s.as_mut(), None, None, M1_PAR, MemStack::new(&mut buf), Default::default())?;
+    let mut v: Vec<f64> = s.column_vector().iter().copied().collect(); v.sort_by(|x, y| y.total_cmp(x)); Ok(v)
+}
+/// Eigenvalues ascending, LOWER triangle only (numpy `eigvalsh` UPLO='L'), sequential.
+fn eig_seq(a: faer::MatRef<'_, f64>) -> Result<Vec<f64>, faer::linalg::evd::EvdError> {
+    use faer::linalg::evd::{self_adjoint_evd, self_adjoint_evd_scratch, ComputeEigenvectors};
+    let mut s = faer::diag::Diag::<f64>::zeros(a.nrows());
+    let mut buf = MemBuffer::new(self_adjoint_evd_scratch::<f64>(a.nrows(), ComputeEigenvectors::No, M1_PAR, Default::default()));
+    self_adjoint_evd(a, s.as_mut(), None, M1_PAR, MemStack::new(&mut buf), Default::default())?;
+    Ok(s.column_vector().iter().copied().collect())
+}
 use sheaf_cell::m1::{adjacency_components, pattern_components};
 use sheaf_cell::num::sparse::Csr;
 use sheaf_cell::num::tol::{H0Policy, ZeroCut};
@@ -68,7 +92,7 @@ pub fn dense_block(d: &Csr, c: &M1Comp) -> Mat<f64> {
 /// matter for the rank count when the caller's tol is negative). Empty for a row-less component (the reference skips it).
 pub fn block_singular_values(d: &Csr, c: &M1Comp) -> Result<Vec<f64>, M1H0Error> {
     if c.rows.is_empty() { return Ok(vec![]); }
-    let mut s = dense_block(d, c).singular_values().map_err(|e| M1H0Error::Numeric(format!("SVD did not converge: {e:?}")))?;
+    let mut s = sv_seq(dense_block(d, c).as_ref()).map_err(|e| M1H0Error::Numeric(format!("SVD did not converge: {e:?}")))?;
     s.resize(c.cols.len().max(s.len()), 0.0);
     Ok(s)
 }
@@ -96,11 +120,10 @@ pub fn ranks(d: &Csr, comps: &[M1Comp], policy: H0Policy) -> Result<(Vec<usize>,
 pub fn block_kernel(d: &Csr, c: &M1Comp, r: usize) -> Result<Mat<f64>, M1H0Error> {
     let n = c.cols.len();
     if c.rows.is_empty() { return Ok(Mat::identity(n, n)); }
-    use faer::dyn_stack::{MemBuffer, MemStack};
     use faer::linalg::svd::{svd, svd_scratch, ComputeSvdVectors};
     let a = dense_block(d, c); let m = a.nrows();
     let cv = if m >= n { ComputeSvdVectors::Thin } else { ComputeSvdVectors::Full };   // V is n×n either way
-    let par = faer::get_global_parallelism();
+    let par = M1_PAR;
     let mut buf = MemBuffer::new(svd_scratch::<f64>(m, n, ComputeSvdVectors::No, cv, par, Default::default()));
     let mut s = faer::diag::Diag::<f64>::zeros(m.min(n)); let mut v = Mat::<f64>::zeros(n, n);
     svd(a.as_ref(), s.as_mut(), None, Some(v.as_mut()), par, MemStack::new(&mut buf), Default::default())
@@ -145,7 +168,7 @@ pub fn block_eigenvalues(l: &Csr, cols: &[usize]) -> Result<Vec<f64>, M1H0Error>
     for (k, &j) in cols.iter().enumerate() { pos.insert(j, k); }
     let mut a = Mat::<f64>::zeros(cols.len(), cols.len());
     for (ri, &i) in cols.iter().enumerate() { for p in l.ptr[i]..l.ptr[i + 1] { if let Some(&k) = pos.get(&l.idx[p]) { a[(ri, k)] += l.val[p]; } } }
-    a.self_adjoint_eigenvalues(Side::Lower).map_err(|e| M1H0Error::Numeric(format!("eigensolver did not converge: {e:?}")))
+    eig_seq(a.as_ref()).map_err(|e| M1H0Error::Numeric(format!("eigensolver did not converge: {e:?}")))
 }
 
 /// dim ker L₀ under the m1 policy (`H0Policy::m1_eig`): λ zero iff λ ≤ rel·max(1, max|λ| over all components).

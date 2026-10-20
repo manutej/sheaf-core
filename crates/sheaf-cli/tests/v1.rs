@@ -103,3 +103,32 @@ fn v1_options_method_parsed_and_unknown_rejected() {
     assert_eq!(v1::parse(&base("polynomial")).unwrap().opts.method, Method::Polynomial);
     assert!(v1::parse(&base("magic")).is_err());
 }
+
+/// ADR-017 P-RES-01: a ~120-byte spec must be refused before any allocation (it used to try a 320 GB identity map and
+/// abort), and a stalk dim near 2^64 must not wrap the offsets (it panicked with index out of bounds).
+#[test]
+fn adversarial_tiny_spec_huge_dims_refused_before_alloc() {
+    let huge = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":200000},{"id":"b","dim":200000}],"edges":[{"u":0,"v":1}],"w":[]}"#;
+    let e = sheaf_cli::v1::parse(huge).err().expect("must be refused");
+    assert!(e.to_string().contains("restriction maps exceed"), "{e}");
+    let wrap = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":18446744073709551615},{"id":"b","dim":1}],"edges":[],"w":[]}"#;
+    let e = sheaf_cli::v1::parse(wrap).err().expect("must be refused");
+    assert!(e.to_string().contains("total stalk dimension"), "{e}");
+    let de = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1}],"edges":[{"u":0,"v":1,"de":4294967296}],"w":[[0]]}"#;
+    assert!(sheaf_cli::v1::parse(de).is_err());
+}
+
+/// ADR-017 P-NUM-01: finite-but-huge entries used to crash `analyze` (evd NoConvergence panic / NaN sort panic);
+/// they are now refused at parse with a P_INPUT_01 error.
+#[test]
+fn adversarial_overflowing_entries_refused_not_panicking() {
+    for t in [r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1},{"id":"c","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e300]],"Fv":[[1e300]]},{"u":1,"v":2}],"x":[[1e300],[-1e300],[0]]}"#,
+              r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e200]],"Fv":[[1e200]]}],"w":[[1]]}"#] {
+        let e = sheaf_cli::v1::parse(t).err().expect("must be refused");
+        assert!(e.to_string().contains("exceeds 1e75"), "{e}");
+    }
+    // the largest admitted magnitude runs to completion without panicking
+    let ok = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1},{"id":"c","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e75]],"Fv":[[-1e75]]},{"u":1,"v":2,"Fu":[[1e75]],"Fv":[[1e75]]}],"x":[[1e75],[-1e75],[1e75]]}"#;
+    let s = sheaf_cli::v1::parse(ok).unwrap();
+    let _ = sheaf_cli::v1::analyze(&s, None);
+}

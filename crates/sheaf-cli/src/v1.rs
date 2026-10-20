@@ -43,6 +43,9 @@ pub struct Spec { pub ids: Vec<String>, pub dims: Vec<usize>, pub edges: Vec<Edg
 fn num(v: &Value, what: &str) -> Result<f64, SpecError> {
     let x = v.as_f64().ok_or_else(|| SpecError::Field(format!("{what}: not a number")))?;
     if !x.is_finite() { return Err(SpecError::Field(format!("{what}: not finite"))); }
+    // ADR-017 P-NUM-01: finite but huge entries overflowed L0 = δᵀδ / xᵀLx to inf/NaN and the run PANICKED (faer evd
+    // NoConvergence at 1e300, NaN sort at 1e200). |entry| <= 1e75 keeps every product chain (x·F·F·x) inside f64.
+    if x.abs() > MAX_ABS_ENTRY { return Err(SpecError::Field(format!("{what}: |value| {x:e} exceeds {MAX_ABS_ENTRY:e} (L0 / energy would overflow f64)"))); }
     Ok(x)
 }
 fn matrix(v: &Value, rows: Option<usize>, cols: usize, what: &str) -> Result<Mat<f64>, SpecError> {
@@ -68,6 +71,13 @@ fn vectors(v: &Value, lens: &[usize], what: &str) -> Result<Vec<f64>, SpecError>
     Ok(out)
 }
 
+/// Total node (and per-edge) stalk dimension cap, as m1's R-DIM-02 MAX_TOTAL_DIM.
+pub const MAX_TOTAL_DIM: usize = (1 << 31) - 1;
+/// Total dense restriction-map storage admitted by `parse` (m1's MAX_SPARSE_BYTES, 4 GiB).
+pub const MAX_MAP_BYTES: usize = 4 << 30;
+/// Largest admitted |entry| in maps, x, w and boundary values (ADR-017 P-NUM-01).
+pub const MAX_ABS_ENTRY: f64 = 1e75;
+
 pub fn parse(text: &str) -> Result<Spec, SpecError> {
     let v: Value = serde_json::from_str(text).map_err(|e| SpecError::Json(e.to_string()))?;
     if v.get("format").and_then(|f| f.as_str()) != Some("frontier-sheaf/v1") { return Err(SpecError::Field("format must be \"frontier-sheaf/v1\"".into())); }
@@ -77,6 +87,11 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
         let id = n.get("id").and_then(|x| x.as_str()).map(String::from).unwrap_or_else(|| i.to_string());
         let d = n.get("dim").and_then(|x| x.as_u64()).ok_or_else(|| SpecError::Field(format!("nodes[{i}].dim: missing non-negative integer")))? as usize;
         ids.push(id); dims.push(d);
+    }
+    // ADR-017 P-RES-01: admission BEFORE any allocation. A 120-byte spec with two nodes of dim 200000 and an edge with
+    // omitted maps used to allocate a 200000x200000 identity (320 GB) and abort; dim 2^64-1 wrapped the offsets.
+    if dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)).map_or(true, |t| t > MAX_TOTAL_DIM) {
+        return Err(SpecError::Field(format!("nodes: total stalk dimension exceeds {MAX_TOTAL_DIM}")));
     }
     let index: std::collections::HashMap<&str, usize> = ids.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
     if index.len() != ids.len() { return Err(SpecError::Field("nodes: duplicate id".into())); }
@@ -88,7 +103,7 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
         }
     };
     let es = v.get("edges").and_then(|n| n.as_array()).ok_or_else(|| SpecError::Field("edges: missing list".into()))?;
-    let mut edges = vec![];
+    let mut edges = vec![]; let mut map_total = 0usize;
     for (j, e) in es.iter().enumerate() {
         let u = endpoint(e.get("u"), j, "u")?; let w_ = endpoint(e.get("v"), j, "v")?;
         if u == w_ { return Err(SpecError::Field(format!("edges[{j}]: self-loop"))); }
@@ -99,6 +114,10 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
             match f { Some(m) => matrix(m, Some(de), d, &format!("edges[{j}].{w}")),
                       None => if d == de { Ok(Mat::identity(de, d)) } else { Err(SpecError::Field(format!("edges[{j}].{w}: omitted but dim {d} != de {de}"))) } }
         };
+        // ADR-017 P-RES-01: the two dense maps (de x dim u, de x dim v) are measured before they are allocated
+        let map_bytes = de.checked_mul(dims[u].saturating_add(dims[w_])).and_then(|k| k.checked_mul(8));
+        map_total = map_bytes.and_then(|b| map_total.checked_add(b)).unwrap_or(usize::MAX);
+        if de > MAX_TOTAL_DIM || map_total > MAX_MAP_BYTES { return Err(SpecError::Field(format!("edges[{j}]: restriction maps exceed {MAX_MAP_BYTES} bytes (dense storage)"))); }
         let fu = mk(e.get("Fu"), dims[u], "Fu")?; let fv = mk(e.get("Fv"), dims[w_], "Fv")?;
         let label = e.get("label").and_then(|x| x.as_str()).map(String::from).unwrap_or_else(|| format!("{}->{}", ids[u], ids[w_]));
         edges.push(Edge { u, v: w_, fu, fv, label });
