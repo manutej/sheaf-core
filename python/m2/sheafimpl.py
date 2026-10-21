@@ -52,13 +52,16 @@ def _rs(name, *args):
     return int(rc)
 def _iv(a): return np.ascontiguousarray(a, dtype=np.int64)
 def _fv(a): return np.ascontiguousarray(a, dtype=np.float64)
-def _csr_args(A):
+def _csr_args(A, pattern=False):
     """(m, n, nnz, indptr, indices, data) of a scipy CSR matrix as int64 / float64 contiguous copies (stored entries as-is:
-    duplicates, explicit zeros and unsorted indices are handled in Rust exactly as scipy does)."""
+    duplicates, explicit zeros and unsorted indices are handled in Rust exactly as scipy does). pattern=True sends the
+    STRUCTURAL nonzeros (data != 0 on the ORIGINAL dtype, as 1.0 / 0.0) instead of the values: used for every component /
+    cap computation, so a complex, longdouble or other non-float64 entry that a float64 cast would turn into 0 (purely
+    imaginary, or below the float64 range) still couples its row and columns exactly as the reference's A.nonzero() does."""
     m, nnz = int(A.shape[0]), int(A.indptr[-1])
     if A.indptr.shape != (m + 1,) or nnz < 0 or nnz > min(A.indices.shape[0], A.data.shape[0]):   # no length channel across the C ABI
         raise ValueError("R-DIM-02: malformed CSR operator (indptr / indices / data lengths disagree)")
-    return (m, int(A.shape[1]), nnz, _iv(A.indptr), _iv(A.indices[:nnz]), _fv(A.data[:nnz]))
+    return (m, int(A.shape[1]), nnz, _iv(A.indptr), _iv(A.indices[:nnz]), _fv(A.data[:nnz] != 0) if pattern else _fv(A.data[:nnz]))
 def _csr_out(cls, val, idx, ptr, shape):
     """Wrap Rust CSR output like scipy builds it: int32 index arrays when they fit (else int64), for csr_matrix AND csr_array."""
     it = np.int32 if max(int(ptr[-1]), int(max(shape))) <= np.iinfo(np.int32).max else np.int64
@@ -276,12 +279,13 @@ def global_sections(delta, tol=RANK_TOL):
     delta = sp.csr_matrix(delta); m, n = delta.shape
     if not np.isfinite(delta.data).all(): raise ValueError("R-FINITE-01: delta must be finite")  # M:delta_finite
     if n == 0: return np.zeros((0, 0))
-    a = _csr_args(delta); sz = np.empty(2 * n, np.int64)
-    k = _rs("sheaf_m1_components", *a, sz); comps = [(int(sz[2 * i]), int(sz[2 * i + 1])) for i in range(k)]   # (len(cols), len(rows)), reference order
+    sz = np.empty(2 * n, np.int64)             # R-PERF-18: components / caps from the original dtype's structural nonzeros
+    k = _rs("sheaf_m1_components", *_csr_args(delta, pattern=True), sz); comps = [(int(sz[2 * i]), int(sz[2 * i + 1])) for i in range(k)]   # (len(cols), len(rows)), reference order
     for cols, rows in [(range(c), range(r)) for c, r in comps]:   # pass 0: validate limits for every component before any SVD (O(1) ranges: only len() is used)
         if len(cols) > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {len(cols)} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")  # M:svd_dim_cap
         if _svd_bytes(len(rows), len(cols)) > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense SVD of {len(rows)}x{len(cols)} block exceeds MAX_DENSE_BYTES")  # M:svd_byte_cap
     if not _rs_f64(delta.dtype): return _ref_gs_passes(delta, n, tol)   # float32 / complex / ...: the reference's passes 1-2
+    a = _csr_args(delta)                                 # float64-exact values (dtype rule) for the Rust passes 1-2
     rk = np.empty(n, np.int64); _rs("sheaf_m1_gs_ranks", *a, float(tol), rk)   # pass 1 (Rust): singular values only, H0Policy::m1_svd(tol)
     ranks = [int(r) for r in rk[:k]]
     N = sum(c - r for (c, _), r in zip(comps, ranks))
@@ -293,6 +297,10 @@ def global_sections(delta, tol=RANK_TOL):
 def _ref_gs_passes(delta, n, tol):
     """The reference's passes 1-2 verbatim (pass 0 already ran above on the same components)."""
     comps = _ref_components(delta, n)
+    for cols in comps:                                   # R-PERF-18 re-check on the components this path densifies (untagged copies of pass 0)
+        rows = np.unique(delta[:, cols].nonzero()[0])
+        if len(cols) > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {len(cols)} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")
+        if _svd_bytes(len(rows), len(cols)) > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense SVD of {len(rows)}x{len(cols)} block exceeds MAX_DENSE_BYTES")
     svs = []
     for cols in comps:                                   # pass 1: singular values only
         D = _dense_block(delta, cols)
@@ -322,17 +330,20 @@ def h0_dim_from_L(L, tol=EIG_TOL):
     if L.shape[0] != L.shape[1]: raise ValueError(f"R-DIM-02: L must be square, got {L.shape}")  # M:L_square
     if not np.isfinite(L.data).all(): raise ValueError("R-FINITE-01: L must be finite")  # M:L_finite
     if n == 0: return 0
-    a = _csr_args(L)[1:]; sz = np.empty(n, np.int64)     # pattern only (Rust); explicitly stored zeros are not couplings
-    groups = [range(int(g)) for g in sz[:_rs("sheaf_m1_l_components", *a, sz)]]   # component sizes as O(1) ranges (only len() is used)
+    sz = np.empty(n, np.int64)     # pattern only (Rust), on the original dtype's structural nonzeros (R-PERF-18); stored zeros are not couplings
+    groups = [range(int(g)) for g in sz[:_rs("sheaf_m1_l_components", *_csr_args(L, pattern=True)[1:], sz)]]   # component sizes as O(1) ranges (only len() is used)
     for cols in groups:                                  # all limits checked before any densification
         if len(cols) > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {len(cols)} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")  # M:eig_dim_cap
         if 8 * 3 * len(cols) ** 2 > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense eig of dim {len(cols)} exceeds MAX_DENSE_BYTES")  # non-binding under the 5000-dim cap (SPEC R-PERF-18 note); kept as defence
     if not _rs_f64(L.dtype):                             # reference lines (see the dtype rule)
         r, c = L.nonzero(); k, lab = connected_components(sp.csr_matrix((np.ones(len(r)), (r, c)), shape=L.shape), directed=False); ws = []
         order = np.argsort(lab, kind="stable"); groups = np.split(order, np.flatnonzero(np.diff(lab[order])) + 1)
+        for cols in groups:                              # R-PERF-18 re-check on the groups this path densifies (untagged copies)
+            if len(cols) > MAX_DENSE_DIM: raise MemoryError(f"R-PERF-18: component of dim {len(cols)} exceeds MAX_DENSE_DIM={MAX_DENSE_DIM}")
+            if 8 * 3 * len(cols) ** 2 > MAX_DENSE_BYTES: raise MemoryError(f"R-PERF-18: dense eig of dim {len(cols)} exceeds MAX_DENSE_BYTES")
         for cols in groups: ws.append(np.linalg.eigvalsh(L[cols][:, cols].toarray()))
         w = np.concatenate(ws); thr = tol * max(1.0, float(abs(w).max())); return int((w <= thr).sum())
-    return _rs("sheaf_m1_h0_dim", *a, float(tol))        # Rust: per-component eigenvalues + H0Policy::m1_eig(tol)
+    return _rs("sheaf_m1_h0_dim", *_csr_args(L)[1:], float(tol))        # Rust: per-component eigenvalues + H0Policy::m1_eig(tol)
 
 def _is_num(v): return isinstance(v, (int, float)) and not isinstance(v, bool)
 def _f64(v):
