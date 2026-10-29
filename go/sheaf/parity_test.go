@@ -270,7 +270,7 @@ func compareReport(t *testing.T, name string, g, r, aux map[string]any) {
 		}
 	}
 	for _, k := range []string{"zero_tol", "zero_tol_min"} {
-		check(t, "h0_cut", relErr(f(gh0[k]), f(rh0[k]), f(rh0[k]))*1, "h0."+k)
+		check(t, "h0_cut", relErr(f(gh0[k]), f(rh0[k]), f(rh0[k])), "h0."+k)
 	}
 	// eigenvalues: |dλ| <= 1e-9 max(1, ||L||_bound)
 	lb := f(at(aux, "l0_bound"))
@@ -328,7 +328,7 @@ func compareReport(t *testing.T, name string, g, r, aux map[string]any) {
 	}
 	// spectral scalars
 	for _, k := range []string{"gap_k", "spectral_gap"} {
-		check(t, "eigenvalue", relErr(f(at(g, "spectral", k)), f(at(r, "spectral", k)), lscale*0+1)/lscale*1, "spectral."+k)
+		check(t, "eigenvalue", relErr(f(at(g, "spectral", k)), f(at(r, "spectral", k)), lscale), "spectral."+k)
 	}
 	check(t, "lambda_max_bound", relErr(f(at(g, "spectral", "lambda_max_bound")), f(at(r, "spectral", "lambda_max_bound")), lb), "lambda_max_bound")
 	if at(g, "spectral", "L1_graph", "kernel_dim") != at(r, "spectral", "L1_graph", "kernel_dim") && !amb {

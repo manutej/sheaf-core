@@ -65,7 +65,7 @@ potential (per component, with the rank set by the same cut: never a global cut)
 - `testdata/golden/`: for each valid spec, `<name>.report.json` (the Rust `sheaf analyze` output with the arguments
   in `golden/args.txt`) and `<name>.aux.json` (the `go_oracle` example: the full L₀ spectrum, the dense Hodge split,
   the potential, and bases of H⁰ and relative H⁰). For each invalid one, `<name>.error.json` (exit code and stderr).
-- Regenerate them with `make -C go golden` (needs cargo; it uses `RUSTUP_TOOLCHAIN` if the pinned toolchain is
+- Regenerate them with `make -C go golden` (needs cargo; set `RUSTUP_TOOLCHAIN=stable` if the pinned toolchain is
   unavailable). Generated specs come from `go run ./internal/gen`. Shared fixtures and toys are committed as they are.
 
 The tolerances are in `sheaf/parity_test.go` and ADR-018. The test prints the worst observed error for each quantity.
