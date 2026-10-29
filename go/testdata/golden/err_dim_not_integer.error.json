@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 spec: nodes[1].dim: missing non-negative integer\n"
+}

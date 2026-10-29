@@ -1,0 +1,77 @@
+{
+ "_comment": "SYNTHETIC math fixture (toy cover / relational cycle / judgment balance); not domain data",
+ "edges": [
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     1.0
+    ]
+   ],
+   "label": "J1 c1~c2 same",
+   "u": "c1",
+   "v": "c2"
+  },
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     1.0
+    ]
+   ],
+   "label": "J1 c2~c3 same",
+   "u": "c2",
+   "v": "c3"
+  },
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     -1.0
+    ]
+   ],
+   "label": "J1 c1~c3 opposite",
+   "u": "c1",
+   "v": "c3"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "c1"
+  },
+  {
+   "dim": 1,
+   "id": "c2"
+  },
+  {
+   "dim": 1,
+   "id": "c3"
+  }
+ ],
+ "options": {},
+ "x": [
+  [
+   1.0
+  ],
+  [
+   1.0
+  ],
+  [
+   -1.0
+  ]
+ ]
+}

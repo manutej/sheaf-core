@@ -1,0 +1,103 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [],
+  "edges_by_harmonic_energy": [],
+  "energy_xLx": 0.0,
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": null,
+    "dim": 3,
+    "found_zero_by_solver": 3,
+    "known_kernel_dim": 0,
+    "largest_counted_zero": {
+      "residual": 0.0,
+      "value": 0.0
+    },
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": null,
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 1e-10,
+    "zero_tol_min": 1e-10
+  },
+  "h1": {
+    "dim": 0,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 0.0,
+    "cg_iters": 0,
+    "cochain": "w (given edge cochain)",
+    "converged": true,
+    "exact_share": 0.0,
+    "harmonic_share": 0.0,
+    "method": "exact",
+    "norm2": 0.0,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.0,
+      "frac_ge_observed": 1.0,
+      "mean": 0.0,
+      "p05": 0.0,
+      "p95": 0.0,
+      "reps": 5
+    },
+    "null_shuffled_values": {
+      "degenerate": true,
+      "frac_ge_observed": null,
+      "mean": null,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": null,
+      "p95": null,
+      "reps": 0
+    }
+  },
+  "input": {
+    "components": 1,
+    "dim_C0": 3,
+    "dim_C1": 0,
+    "edges": 1,
+    "has_w": true,
+    "has_x": true,
+    "known_constant_components": 0,
+    "nodes": 2
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [],
+  "nodes_by_incident_discord": [],
+  "spectral": {
+    "L0_smallest": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "L1_graph": {
+      "kernel_dim": 0,
+      "mapped_pairs_checked": 0,
+      "max_mapped_residual": 0.0,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": null,
+    "inner_cg": null,
+    "lambda_max_bound": 0.0,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "spectral_gap": null
+  }
+}

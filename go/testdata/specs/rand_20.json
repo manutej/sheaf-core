@@ -1,0 +1,36 @@
+{
+ "_comment": "RANDOM synthetic sheaf (go/internal/gen, PCG(20261029, 20)); mixed stalk dims",
+ "edges": [
+  {
+   "Fu": [],
+   "Fv": [],
+   "de": 0,
+   "label": "e0",
+   "u": 0,
+   "v": 1
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 2,
+   "id": "n0"
+  },
+  {
+   "dim": 1,
+   "id": "n1"
+  }
+ ],
+ "w": [
+  []
+ ],
+ "x": [
+  [
+   -1.33172541477,
+   0.377171199991
+  ],
+  [
+   -0.0937662366201
+  ]
+ ]
+}

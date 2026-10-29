@@ -1,0 +1,79 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): absolute zero cut, top/k/method options",
+ "edges": [
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     0.0001
+    ]
+   ],
+   "u": 0,
+   "v": 1
+  },
+  {
+   "Fu": [
+    [
+     0.0001
+    ]
+   ],
+   "Fv": [
+    [
+     1
+    ]
+   ],
+   "u": 1,
+   "v": 2
+  },
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     1.0000001
+    ]
+   ],
+   "u": 0,
+   "v": 2
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "a"
+  },
+  {
+   "dim": 1,
+   "id": "b"
+  },
+  {
+   "dim": 1,
+   "id": "c"
+  }
+ ],
+ "options": {
+  "h0_absolute_tol": 0.000001,
+  "k": 1,
+  "method": "polynomial",
+  "top": 2
+ },
+ "x": [
+  [
+   1
+  ],
+  [
+   10000
+  ],
+  [
+   1
+  ]
+ ]
+}

@@ -1,0 +1,114 @@
+{
+ "_comment": "SYNTHETIC math fixture (toy cover / relational cycle / judgment balance); not domain data",
+ "edges": [
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     0.001
+    ]
+   ],
+   "label": "overlap R1&R2",
+   "u": "R1",
+   "v": "R2"
+  },
+  {
+   "Fu": [
+    [
+     0.001
+    ]
+   ],
+   "Fv": [
+    [
+     1.0
+    ]
+   ],
+   "label": "overlap R2&R3",
+   "u": "R2",
+   "v": "R3"
+  },
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     1e-06
+    ]
+   ],
+   "label": "overlap R3&R4",
+   "u": "R3",
+   "v": "R4"
+  },
+  {
+   "Fu": [
+    [
+     1e-06
+    ]
+   ],
+   "Fv": [
+    [
+     1.0
+    ]
+   ],
+   "label": "overlap R4&R1",
+   "u": "R4",
+   "v": "R1"
+  },
+  {
+   "Fu": [
+    [
+     1.0
+    ]
+   ],
+   "Fv": [
+    [
+     1.0
+    ]
+   ],
+   "label": "overlap R1&R3",
+   "u": "R1",
+   "v": "R3"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "R1"
+  },
+  {
+   "dim": 1,
+   "id": "R2"
+  },
+  {
+   "dim": 1,
+   "id": "R3"
+  },
+  {
+   "dim": 1,
+   "id": "R4"
+  }
+ ],
+ "options": {},
+ "x": [
+  [
+   12.0
+  ],
+  [
+   12000.0
+  ],
+  [
+   18.0
+  ],
+  [
+   12000000.0
+  ]
+ ]
+}

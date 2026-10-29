@@ -1,0 +1,7 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): empty graph",
+ "edges": [],
+ "format": "frontier-sheaf/v1",
+ "nodes": [],
+ "x": []
+}

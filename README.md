@@ -35,6 +35,11 @@ The gated m1 Rust crate (sheaf-contract) still does not (it stays byte-identical
 `python/m1/sheafimpl_rs.py`, the Rust-backed m1 builder shim. Parity: `cargo test --release -p sheaf-cli --test m1_parity`
 and `python python/m1/rust_parity.py` (copy `target/release/libsheaf_cli.so` next to the shim first).
 
+## Go port (`go/`, ADR-018)
+A pure-Go port of the graph subset (`sheafgo analyze`, same spec, flags and report keys) for embedding in Go hosts. It
+is checked against golden reports from this Rust code, which stays the reference. Gate: `make -C go check`. See
+`go/README.md`.
+
 ## Build and test
 
 ```

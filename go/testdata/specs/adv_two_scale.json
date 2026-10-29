@@ -1,0 +1,66 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): two components at scales 1e5 and 1e-1 (per-component cut)",
+ "edges": [
+  {
+   "Fu": [
+    [
+     100000
+    ]
+   ],
+   "Fv": [
+    [
+     100000
+    ]
+   ],
+   "u": "a",
+   "v": "b"
+  },
+  {
+   "Fu": [
+    [
+     0.1
+    ]
+   ],
+   "Fv": [
+    [
+     0.1
+    ]
+   ],
+   "u": "c",
+   "v": "d"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "a"
+  },
+  {
+   "dim": 1,
+   "id": "b"
+  },
+  {
+   "dim": 1,
+   "id": "c"
+  },
+  {
+   "dim": 1,
+   "id": "d"
+  }
+ ],
+ "x": [
+  [
+   1
+  ],
+  [
+   2
+  ],
+  [
+   3
+  ],
+  [
+   4
+  ]
+ ]
+}

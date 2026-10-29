@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 flag --null-reps: bad or missing value \"-1\"\n"
+}

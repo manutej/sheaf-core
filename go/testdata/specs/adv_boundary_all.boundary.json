@@ -1,0 +1,18 @@
+{
+ "boundary": [
+  {
+   "node": "a",
+   "value": [
+    1
+   ]
+  },
+  {
+   "node": "b",
+   "value": [
+    2,
+    2
+   ]
+  }
+ ],
+ "format": "frontier-sheaf/boundary-v1"
+}

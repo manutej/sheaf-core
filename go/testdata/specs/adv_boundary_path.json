@@ -1,0 +1,61 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): path, unique linear extension",
+ "edges": [
+  {
+   "u": "a",
+   "v": "b"
+  },
+  {
+   "u": "b",
+   "v": "c"
+  },
+  {
+   "u": "c",
+   "v": "d"
+  },
+  {
+   "u": "d",
+   "v": "e"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "a"
+  },
+  {
+   "dim": 1,
+   "id": "b"
+  },
+  {
+   "dim": 1,
+   "id": "c"
+  },
+  {
+   "dim": 1,
+   "id": "d"
+  },
+  {
+   "dim": 1,
+   "id": "e"
+  }
+ ],
+ "x": [
+  [
+   0
+  ],
+  [
+   0
+  ],
+  [
+   0
+  ],
+  [
+   0
+  ],
+  [
+   0
+  ]
+ ]
+}

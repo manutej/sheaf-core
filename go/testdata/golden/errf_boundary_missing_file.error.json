@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 read testdata/specs/does-not-exist.boundary.json: No such file or directory (os error 2)\n"
+}

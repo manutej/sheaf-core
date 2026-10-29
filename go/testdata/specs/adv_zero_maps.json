@@ -1,0 +1,91 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): all-zero and one-sided zero restriction maps",
+ "edges": [
+  {
+   "Fu": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ],
+   "Fv": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ],
+   "u": "a",
+   "v": "b"
+  },
+  {
+   "Fu": [
+    [
+     0,
+     0
+    ]
+   ],
+   "Fv": [
+    [
+     1,
+     2
+    ]
+   ],
+   "u": "b",
+   "v": "c"
+  },
+  {
+   "u": "a",
+   "v": "c"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 2,
+   "id": "a"
+  },
+  {
+   "dim": 2,
+   "id": "b"
+  },
+  {
+   "dim": 2,
+   "id": "c"
+  }
+ ],
+ "w": [
+  [
+   1,
+   -1
+  ],
+  [
+   2
+  ],
+  [
+   0.5,
+   0.25
+  ]
+ ],
+ "x": [
+  [
+   1,
+   2
+  ],
+  [
+   3,
+   4
+  ],
+  [
+   5,
+   6
+  ]
+ ]
+}

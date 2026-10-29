@@ -1,0 +1,139 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [
+    {
+      "discord": 0.0606249226618,
+      "edge": 0,
+      "harmonic_energy": 0.0,
+      "harmonic_frac_of_total": 0.0,
+      "label": "n5->n7",
+      "u": "n5",
+      "v": "n7"
+    }
+  ],
+  "edges_by_harmonic_energy": [],
+  "energy_xLx": 0.0606249226618,
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": 3224258259.63,
+    "dim": 12,
+    "found_zero_by_solver": 3,
+    "known_kernel_dim": 9,
+    "largest_counted_zero": {
+      "residual": 2.27547264282e-20,
+      "value": 2.27547264282e-20
+    },
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": {
+      "residual": 3.92618933814e-17,
+      "value": 0.322425825963
+    },
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 1e-10,
+    "zero_tol_min": 1e-10
+  },
+  "h1": {
+    "dim": 0,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 0.0,
+    "cg_iters": 1,
+    "cochain": "delta x (derived from node data; exact by construction, A9)",
+    "converged": true,
+    "exact_share": 1.0,
+    "harmonic_share": 0.0,
+    "method": "exact",
+    "norm2": 0.0606249226618,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.0,
+      "frac_ge_observed": 1.0,
+      "mean": 2.09369614105e-32,
+      "p05": 0.0,
+      "p95": 4.13966289139e-32,
+      "reps": 5
+    },
+    "null_shuffled_values": {
+      "degenerate": true,
+      "frac_ge_observed": 1.0,
+      "mean": 0.0,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": 0.0,
+      "p95": 0.0,
+      "reps": 5
+    }
+  },
+  "input": {
+    "components": 8,
+    "dim_C0": 13,
+    "dim_C1": 1,
+    "edges": 1,
+    "has_w": false,
+    "has_x": true,
+    "known_constant_components": 7,
+    "nodes": 9
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [
+    {
+      "abs_potential": 0.392316611607,
+      "node": "n7"
+    },
+    {
+      "abs_potential": 0.184702946205,
+      "node": "n5"
+    }
+  ],
+  "nodes_by_incident_discord": [
+    {
+      "incident_discord": 0.0606249226618,
+      "node": "n5"
+    },
+    {
+      "incident_discord": 0.0606249226618,
+      "node": "n7"
+    }
+  ],
+  "spectral": {
+    "L0_smallest": [
+      -2.77555756156e-17,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "L1_graph": {
+      "kernel_dim": 0,
+      "mapped_pairs_checked": 1,
+      "max_mapped_residual": 5.55111512313e-17,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": 0.0,
+    "inner_cg": null,
+    "lambda_max_bound": 0.419233272277,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      2.9863196205e-17,
+      1.057357693e-17,
+      2.27547264282e-20,
+      3.92618933814e-17
+    ],
+    "spectral_gap": 0.322425825963
+  }
+}
