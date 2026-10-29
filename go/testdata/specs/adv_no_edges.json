@@ -1,0 +1,24 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): nodes but no edges",
+ "edges": [],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 2,
+   "id": "a"
+  },
+  {
+   "dim": 1,
+   "id": "b"
+  }
+ ],
+ "x": [
+  [
+   1,
+   2
+  ],
+  [
+   3
+  ]
+ ]
+}

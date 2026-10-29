@@ -1,0 +1,40 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): invalid input, must be rejected",
+ "edges": [
+  {
+   "u": "a",
+   "v": "b"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 2,
+   "id": "a"
+  },
+  {
+   "dim": 2,
+   "id": "b"
+  }
+ ],
+ "w": [
+  [
+   1,
+   2
+  ],
+  [
+   3,
+   4
+  ]
+ ],
+ "x": [
+  [
+   1,
+   2
+  ],
+  [
+   3,
+   4
+  ]
+ ]
+}

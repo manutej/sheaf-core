@@ -1,0 +1,74 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): two scales, non-constant maps (no known kernel)",
+ "edges": [
+  {
+   "Fu": [
+    [
+     100000,
+     0
+    ]
+   ],
+   "Fv": [
+    [
+     200000,
+     0
+    ]
+   ],
+   "u": "a",
+   "v": "b"
+  },
+  {
+   "Fu": [
+    [
+     0.1,
+     0.05
+    ]
+   ],
+   "Fv": [
+    [
+     0,
+     0.1
+    ]
+   ],
+   "u": "c",
+   "v": "d"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 2,
+   "id": "a"
+  },
+  {
+   "dim": 2,
+   "id": "b"
+  },
+  {
+   "dim": 2,
+   "id": "c"
+  },
+  {
+   "dim": 2,
+   "id": "d"
+  }
+ ],
+ "x": [
+  [
+   1,
+   0
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   3,
+   0
+  ],
+  [
+   4,
+   1
+  ]
+ ]
+}

@@ -1,0 +1,172 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [
+    {
+      "discord": 4.0,
+      "edge": 1,
+      "harmonic_energy": 1.23259516441e-30,
+      "harmonic_frac_of_total": 1.95262600302e-31,
+      "label": "b->c",
+      "u": "b",
+      "v": "c"
+    },
+    {
+      "discord": 2.0,
+      "edge": 0,
+      "harmonic_energy": 2.0,
+      "harmonic_frac_of_total": 0.316831683168,
+      "label": "a->b",
+      "u": "a",
+      "v": "b"
+    },
+    {
+      "discord": 0.3125,
+      "edge": 2,
+      "harmonic_energy": 4.56060210831e-31,
+      "harmonic_frac_of_total": 7.22471621118e-32,
+      "label": "a->c",
+      "u": "a",
+      "v": "c"
+    }
+  ],
+  "edges_by_harmonic_energy": [
+    {
+      "discord": 2.0,
+      "edge": 0,
+      "harmonic_energy": 2.0,
+      "harmonic_frac_of_total": 0.316831683168,
+      "label": "a->b",
+      "u": "a",
+      "v": "b"
+    }
+  ],
+  "energy_xLx": 321.0,
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": 897130662.703,
+    "dim": 3,
+    "found_zero_by_solver": 3,
+    "known_kernel_dim": 0,
+    "largest_counted_zero": {
+      "residual": 0.0,
+      "value": 0.0
+    },
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": {
+      "residual": 4.76919622612e-16,
+      "value": 0.807417596433
+    },
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 9e-10,
+    "zero_tol_min": 9e-10
+  },
+  "h1": {
+    "dim": 2,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 1.27612306872e-15,
+    "cg_iters": 3,
+    "cochain": "w (given edge cochain)",
+    "converged": true,
+    "exact_share": 0.683168316832,
+    "harmonic_share": 0.316831683168,
+    "method": "exact",
+    "norm2": 6.3125,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.4,
+      "frac_ge_observed": 0.8,
+      "mean": 0.472732145519,
+      "p05": 0.0172423187846,
+      "p95": 0.712970978103,
+      "reps": 5
+    },
+    "null_shuffled_values": {
+      "degenerate": false,
+      "frac_ge_observed": 0.6,
+      "mean": 0.209900990099,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": 0.049504950495,
+      "p95": 0.316831683168,
+      "reps": 5
+    }
+  },
+  "input": {
+    "components": 1,
+    "dim_C0": 6,
+    "dim_C1": 5,
+    "edges": 3,
+    "has_w": true,
+    "has_x": true,
+    "known_constant_components": 0,
+    "nodes": 3
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [
+    {
+      "abs_potential": 0.91001373616,
+      "node": "c"
+    },
+    {
+      "abs_potential": 0.477624329364,
+      "node": "a"
+    }
+  ],
+  "nodes_by_incident_discord": [
+    {
+      "incident_discord": 6.0,
+      "node": "b"
+    },
+    {
+      "incident_discord": 4.3125,
+      "node": "c"
+    },
+    {
+      "incident_discord": 2.3125,
+      "node": "a"
+    }
+  ],
+  "spectral": {
+    "L0_smallest": [
+      -3.23108484027e-16,
+      0.0,
+      0.0,
+      0.807417596433,
+      2.0,
+      6.19258240357
+    ],
+    "L1_graph": {
+      "kernel_dim": 2,
+      "mapped_pairs_checked": 3,
+      "max_mapped_residual": 4.0701448389e-15,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": null,
+    "inner_cg": null,
+    "lambda_max_bound": 9.0,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      5.8715853865e-16,
+      0.0,
+      0.0,
+      4.76919622612e-16,
+      9.22220506951e-16,
+      5.04510556332e-15
+    ],
+    "spectral_gap": 0.807417596433
+  }
+}

@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 spec: edges[0].Fv: 2 rows, expected 1\n"
+}

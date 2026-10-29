@@ -1,0 +1,10 @@
+# tag | extra CLI args for testdata/specs/errf_flags.json (one case per line). Read by scripts/gen-golden.sh and the Go tests.
+k_not_number | --k x
+k_missing | --k
+null_reps_negative | --null-reps -1
+seed_float | --seed 1.5
+top_bad | --top many
+method_unknown | --method qr
+unknown_flag | --frobnicate 1
+boundary_missing_file | --boundary testdata/specs/does-not-exist.boundary.json
+k_zero | --k 0

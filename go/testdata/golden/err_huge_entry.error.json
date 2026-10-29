@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 spec: x: |value| 1e76 exceeds 1e75 (L0 / energy would overflow f64)\n"
+}

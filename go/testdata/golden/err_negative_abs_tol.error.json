@@ -1,0 +1,4 @@
+{
+ "exit": 2,
+ "stderr": "P_INPUT_01 spec: options.h0_absolute_tol: must be >= 0\n"
+}

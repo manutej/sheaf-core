@@ -1,0 +1,67 @@
+{
+ "_comment": "SYNTHETIC math fixture (toy cover / relational cycle / judgment balance); not domain data",
+ "edges": [
+  {
+   "label": "claim log(E2/E1)",
+   "u": "E1",
+   "v": "E2"
+  },
+  {
+   "label": "claim log(E3/E2)",
+   "u": "E2",
+   "v": "E3"
+  },
+  {
+   "label": "claim log(E4/E3)",
+   "u": "E3",
+   "v": "E4"
+  },
+  {
+   "label": "claim log(E1/E4)",
+   "u": "E4",
+   "v": "E1"
+  },
+  {
+   "label": "claim log(E3/E1)",
+   "u": "E1",
+   "v": "E3"
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "E1"
+  },
+  {
+   "dim": 1,
+   "id": "E2"
+  },
+  {
+   "dim": 1,
+   "id": "E3"
+  },
+  {
+   "dim": 1,
+   "id": "E4"
+  }
+ ],
+ "options": {},
+ "w": [
+  [
+   0.7
+  ],
+  [
+   0.40000000000000013
+  ],
+  [
+   -0.7000000000000001
+  ],
+  [
+   -0.4
+  ],
+  [
+   1.1
+  ]
+ ]
+}

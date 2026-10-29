@@ -1,0 +1,139 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [
+    {
+      "discord": 0.845725699161,
+      "edge": 0,
+      "harmonic_energy": 1.74104066973e-31,
+      "harmonic_frac_of_total": 2.05863517149e-31,
+      "label": "e0",
+      "u": "n0",
+      "v": "n2"
+    }
+  ],
+  "edges_by_harmonic_energy": [],
+  "energy_xLx": 5.04745940477,
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": 477941173.705,
+    "dim": 6,
+    "found_zero_by_solver": 1,
+    "known_kernel_dim": 5,
+    "largest_counted_zero": {
+      "residual": 7.49176488215e-16,
+      "value": -7.02863731862e-16
+    },
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": {
+      "residual": 7.3977363481e-16,
+      "value": 0.683356854872
+    },
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 1.42979281231e-9,
+    "zero_tol_min": 1.42979281231e-9
+  },
+  "h1": {
+    "dim": 0,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 9.54957108833e-16,
+    "cg_iters": 3,
+    "cochain": "w (given edge cochain)",
+    "converged": true,
+    "exact_share": 1.0,
+    "harmonic_share": 2.05863517149e-31,
+    "method": "exact",
+    "norm2": 0.845725699161,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.0,
+      "frac_ge_observed": 1.0,
+      "mean": 4.39924158661e-30,
+      "p05": 8.48499214373e-32,
+      "p95": 1.01533446401e-29,
+      "reps": 5
+    },
+    "null_shuffled_values": {
+      "degenerate": true,
+      "frac_ge_observed": 1.0,
+      "mean": 2.05863517149e-31,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": 2.05863517149e-31,
+      "p95": 2.05863517149e-31,
+      "reps": 5
+    }
+  },
+  "input": {
+    "components": 4,
+    "dim_C0": 9,
+    "dim_C1": 3,
+    "edges": 1,
+    "has_w": true,
+    "has_x": true,
+    "known_constant_components": 3,
+    "nodes": 5
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [
+    {
+      "abs_potential": 0.68217996969,
+      "node": "n2"
+    },
+    {
+      "abs_potential": 0.0646339906758,
+      "node": "n0"
+    }
+  ],
+  "nodes_by_incident_discord": [
+    {
+      "incident_discord": 0.845725699161,
+      "node": "n0"
+    },
+    {
+      "incident_discord": 0.845725699161,
+      "node": "n2"
+    }
+  ],
+  "spectral": {
+    "L0_smallest": [
+      -7.02863731862e-16,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.683356854872
+    ],
+    "L1_graph": {
+      "kernel_dim": 0,
+      "mapped_pairs_checked": 3,
+      "max_mapped_residual": 3.46844760731e-15,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": 0.683356854872,
+    "inner_cg": null,
+    "lambda_max_bound": 14.2979281231,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      7.49176488215e-16,
+      7.3977363481e-16,
+      6.13140705829e-16,
+      2.852518435e-15
+    ],
+    "spectral_gap": 0.683356854872
+  }
+}

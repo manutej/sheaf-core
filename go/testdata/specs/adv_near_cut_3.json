@@ -1,0 +1,94 @@
+{
+ "_comment": "ADVERSARIAL synthetic case (go/internal/gen): 1-dim 4-cycle with holonomy 1+6e-05: smallest eigenvalue near the zero cut",
+ "edges": [
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     1
+    ]
+   ],
+   "u": 0,
+   "v": 1
+  },
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     1
+    ]
+   ],
+   "u": 1,
+   "v": 2
+  },
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     1
+    ]
+   ],
+   "u": 2,
+   "v": 3
+  },
+  {
+   "Fu": [
+    [
+     1
+    ]
+   ],
+   "Fv": [
+    [
+     1.00006
+    ]
+   ],
+   "u": 3,
+   "v": 0
+  }
+ ],
+ "format": "frontier-sheaf/v1",
+ "nodes": [
+  {
+   "dim": 1,
+   "id": "c0"
+  },
+  {
+   "dim": 1,
+   "id": "c1"
+  },
+  {
+   "dim": 1,
+   "id": "c2"
+  },
+  {
+   "dim": 1,
+   "id": "c3"
+  }
+ ],
+ "x": [
+  [
+   1
+  ],
+  [
+   1
+  ],
+  [
+   1
+  ],
+  [
+   1
+  ]
+ ]
+}
