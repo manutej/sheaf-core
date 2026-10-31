@@ -85,3 +85,39 @@ pub fn betti_mod_p_checked(delta: &[Mat<f64>], dims: &[usize], p: i64) -> Result
 pub fn betti_fp(delta: &[Mat<f64>], dims: &[usize], p: u32) -> Option<sheaf_cell::num::family::ExactFp<Vec<usize>>> {
     betti_mod_p(delta, dims, p as i64).map(|b| sheaf_cell::num::family::ExactFp::new(b, p))
 }
+
+#[cfg(test)]
+mod mulmod_tests {
+    use super::mulmod;
+    use proptest::prelude::*;
+
+    fn reference(a: i64, b: i64, p: i64) -> i64 { ((a as u128 * b as u128) % p as u128) as i64 }
+
+    #[test]
+    fn mulmod_edge_cases() {
+        for p in [2i64, 3, 4294967291, 9223372036854775783, i64::MAX] {
+            for a in [0, 1, p / 2, p - 2, p - 1] { for b in [0, 1, p / 2, p - 2, p - 1] {
+                if a < 0 || b < 0 { continue; }
+                assert_eq!(mulmod(a, b, p), reference(a, b, p), "a={a} b={b} p={p}");
+            }}
+        }
+        // (p-1)^2 = 1 mod p
+        assert_eq!(mulmod(4294967290, 4294967290, 4294967291), 1);
+        assert_eq!(mulmod(9223372036854775782, 9223372036854775782, 9223372036854775783), 1);
+    }
+
+    fn triple() -> impl Strategy<Value = (i64, i64, i64)> {
+        prop_oneof![2i64..=i64::MAX, 2i64..=1 << 32, Just(4294967291i64), Just(9223372036854775783i64), Just(i64::MAX)]
+            .prop_flat_map(|p| (0..p, 0..p, Just(p)))
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(4096))]
+        #[test]
+        fn mulmod_matches_u128((a, b, p) in triple()) {
+            let r = mulmod(a, b, p);
+            prop_assert!((0..p).contains(&r));
+            prop_assert_eq!(r, reference(a, b, p));
+        }
+    }
+}

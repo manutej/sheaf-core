@@ -31,6 +31,9 @@ pub enum ComplexError {
     BadIndex { dim: usize, index: usize },
     BoundaryOfBoundaryNonzero { dim: usize, facet: usize, cocofacet: usize },
     SelfLoop { edge: usize, vertex: usize },
+    /// `inc` has `inc_levels` incidence levels but `n_cells` only has `n_levels` entries; a valid complex needs
+    /// `inc.len() < n_cells.len()` (inc[k] links k-cells to (k+1)-cells).
+    LevelMismatch { inc_levels: usize, n_levels: usize },
 }
 
 impl CellComplex {
@@ -90,6 +93,11 @@ impl CellComplex {
 
     /// Check indices and boundary-of-boundary = 0 (A3). Pure; returns typed error.
     pub fn validate(&self) -> Result<(), ComplexError> {
+        // Fields are pub, so a hand-built complex may carry more incidence levels than cell counts: reject it instead
+        // of panicking on self.n_cells[k + 1] below.
+        if self.inc.len() >= self.n_cells.len() && !self.inc.is_empty() {
+            return Err(ComplexError::LevelMismatch { inc_levels: self.inc.len(), n_levels: self.n_cells.len() });
+        }
         for (k, list) in self.inc.iter().enumerate() {
             for i in list {
                 if i.facet >= self.n_cells[k] { return Err(ComplexError::BadIndex { dim: k, index: i.facet }); }
@@ -109,5 +117,40 @@ impl CellComplex {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn inc(facet: usize, cofacet: usize, sign: i8) -> Incidence { Incidence { facet, cofacet, sign } }
+
+    /// Regression (sheaf-validate-index-001 observation): more incidence levels than cell counts used to panic.
+    #[test]
+    fn validate_rejects_more_inc_levels_than_cell_counts() {
+        // one level of cell counts, one level of incidences: inc[0] would need n_cells[1]
+        let c = CellComplex { n_cells: vec![2], inc: vec![vec![inc(0, 0, -1), inc(1, 0, 1)]], verts: vec![] };
+        assert_eq!(c.validate(), Err(ComplexError::LevelMismatch { inc_levels: 1, n_levels: 1 }));
+        // no cell counts at all
+        let c = CellComplex { n_cells: vec![], inc: vec![vec![]], verts: vec![] };
+        assert_eq!(c.validate(), Err(ComplexError::LevelMismatch { inc_levels: 1, n_levels: 0 }));
+        // graph shape with an extra (empty) incidence level
+        let c = CellComplex { n_cells: vec![2, 1], inc: vec![vec![inc(0, 0, -1), inc(1, 0, 1)], vec![]], verts: vec![] };
+        assert_eq!(c.validate(), Err(ComplexError::LevelMismatch { inc_levels: 2, n_levels: 2 }));
+    }
+
+    #[test]
+    fn validate_still_accepts_consistent_shapes() {
+        let c = CellComplex { n_cells: vec![2, 1], inc: vec![vec![inc(0, 0, -1), inc(1, 0, 1)]], verts: vec![] };
+        assert_eq!(c.validate(), Ok(()));
+        let c = CellComplex { n_cells: vec![3], inc: vec![], verts: vec![] };
+        assert_eq!(c.validate(), Ok(()));
+        let c = CellComplex { n_cells: vec![], inc: vec![], verts: vec![] };
+        assert_eq!(c.validate(), Ok(()));
+        assert_eq!(CellComplex::simplicial(3, &[], &[[0, 1, 2]]).validate(), Ok(()));
+        // index errors keep their order and payload
+        let c = CellComplex { n_cells: vec![2, 1], inc: vec![vec![inc(0, 1, -1)]], verts: vec![] };
+        assert_eq!(c.validate(), Err(ComplexError::BadIndex { dim: 1, index: 1 }));
     }
 }
