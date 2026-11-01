@@ -21,9 +21,14 @@ pub struct Report {
     #[serde(rename = "energy_xLx", skip_serializing_if = "Option::is_none")]
     pub energy_xlx: Option<f64>,
     pub edges_by_harmonic_energy: Vec<EdgeRow>,
+    /// count of qualifying rows before the `top` cut (sheaf-glue-graph-001: no silent truncation)
+    pub edges_by_harmonic_energy_total: usize,
     pub edges_by_discord: Vec<EdgeRow>,
+    pub edges_by_discord_total: usize,
     pub nodes_by_abs_potential: Vec<NodePotential>,
+    pub nodes_by_abs_potential_total: usize,
     pub nodes_by_incident_discord: Vec<NodeDiscord>,
+    pub nodes_by_incident_discord_total: usize,
     /// present only with `--boundary` (harmonic extension, sheaf-solve + uniqueness via sheaf-cohom::relative)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<ExtensionReport>,

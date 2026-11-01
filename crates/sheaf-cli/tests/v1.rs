@@ -132,3 +132,20 @@ fn adversarial_overflowing_entries_refused_not_panicking() {
     let s = sheaf_cli::v1::parse(ok).unwrap();
     let _ = sheaf_cli::v1::analyze(&s, None);
 }
+
+#[test]
+fn v1_truncated_lists_report_totals_sheaf_glue_graph_001() {
+    // Bend sheaf-glue-graph-001 :267 counterexample: 3 conflicting edges, top 2 -> 2 listed, 1 hidden with no count.
+    let spec = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1},{"id":"c","dim":1}],
+     "edges":[{"u":"a","v":"b"},{"u":"b","v":"c"},{"u":"a","v":"c"}],"w":[[1],[2],[3]],"options":{"null_reps":2,"top":2}}"#;
+    let (r, _) = v1::analyze(&v1::parse(spec).unwrap(), None);
+    assert_eq!(r.edges_by_discord.len(), 2);
+    assert_eq!(r.edges_by_discord_total, 3, "hidden conflicting edge must be counted");
+    assert_eq!(r.edges_by_harmonic_energy.len(), r.edges_by_harmonic_energy_total.min(2));
+    assert_eq!(r.nodes_by_incident_discord.len(), 2);
+    assert_eq!(r.nodes_by_incident_discord_total, 3);
+    assert_eq!(r.nodes_by_abs_potential.len(), r.nodes_by_abs_potential_total.min(2));
+    let v = r.to_value();
+    assert_eq!(v["format"], "frontier-sheaf/report-v1");
+    assert_eq!(v["edges_by_discord_total"], 3);
+}

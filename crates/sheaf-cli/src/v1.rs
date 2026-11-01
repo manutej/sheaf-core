@@ -262,17 +262,21 @@ pub fn analyze(spec: &Spec, out_path: Option<String>) -> (Report, Vec<Effect>) {
     let mut er: Vec<(usize, f64, f64)> = (0..spec.edges.len()).map(|j| (j, blk(&g.harmonic, &oe, j), blk(&w, &oe, j))).collect();
     er.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(a.0.cmp(&b.0)));
     let edge_row = |&(j, h, t): &(usize, f64, f64)| { let e = &spec.edges[j]; EdgeRow { edge: j, u: spec.ids[e.u].clone(), v: spec.ids[e.v].clone(), label: e.label.clone(), harmonic_energy: sig(h), discord: sig(t), harmonic_frac_of_total: sig(if wn2 > 0.0 { h / wn2 } else { 0.0 }) } };
+    let edges_h_total = er.iter().filter(|r| r.1 > 1e-24 * wn2.max(1e-300)).count();
     let edges_h: Vec<EdgeRow> = er.iter().filter(|r| r.1 > 1e-24 * wn2.max(1e-300)).take(o.top).map(edge_row).collect();
     let mut ed = er.clone(); ed.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap().then(a.0.cmp(&b.0)));
+    let edges_d_total = ed.iter().filter(|r| r.2 > 0.0).count();
     let edges_d: Vec<EdgeRow> = ed.iter().filter(|r| r.2 > 0.0).take(o.top).map(edge_row).collect();
     let mut nrk: Vec<(usize, f64)> = (0..spec.dims.len()).map(|i| (i, blk(&g.potential, &on, i).sqrt())).collect();
     nrk.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(a.0.cmp(&b.0)));
+    let nodes_p_total = nrk.iter().filter(|r| r.1 > 0.0).count();
     let nodes_p: Vec<NodePotential> = nrk.iter().filter(|r| r.1 > 0.0).take(o.top).map(|&(i, p)| NodePotential { node: spec.ids[i].clone(), abs_potential: sig(p) }).collect();
     // incident edge discord per node: edge-stalk units (the maps' normalisation), so unit-independent unlike |potential| (A8)
     let mut inc = vec![0.0f64; spec.dims.len()];
     for &(j, _, t) in &er { inc[spec.edges[j].u] += t; inc[spec.edges[j].v] += t; }
     let mut irk: Vec<(usize, f64)> = inc.into_iter().enumerate().collect();
     irk.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(a.0.cmp(&b.0)));
+    let nodes_i_total = irk.iter().filter(|r| r.1 > 0.0).count();
     let nodes_i: Vec<NodeDiscord> = irk.iter().filter(|r| r.1 > 0.0).take(o.top).map(|&(i, d)| NodeDiscord { node: spec.ids[i].clone(), incident_discord: sig(d) }).collect();
     let energy: Option<f64> = spec.x.as_ref().map(|x| sig(dot(&d0.mul(x), &d0.mul(x))));
     let pair = |p: &spectral::EigPair| Pair { value: sig(p.value), residual: sig(p.residual) };
@@ -302,9 +306,13 @@ pub fn analyze(spec: &Spec, out_path: Option<String>) -> (Report, Vec<Effect>) {
             cg_iters: hs.iters, cert_coclosed: sig(hs.cert), converged: hs.converged, null_random_gaussian: null_random, null_shuffled_values: null_shuffle },
         energy_xlx: energy,
         edges_by_harmonic_energy: edges_h,
+        edges_by_harmonic_energy_total: edges_h_total,
         edges_by_discord: edges_d,
+        edges_by_discord_total: edges_d_total,
         nodes_by_abs_potential: nodes_p,
+        nodes_by_abs_potential_total: nodes_p_total,
         nodes_by_incident_discord: nodes_i,
+        nodes_by_incident_discord_total: nodes_i_total,
         extension: spec.boundary.as_ref().map(|b| extension(spec, &d0, &on, b)),
         assumptions: vec!["A1-A8 of docs/rust-cohomology-design.md", "A9 w := delta x when only x is given (harmonic share 0 by construction)",
             "A10 v1 is graph-only (no 2-cells): no coexact part", "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"],
