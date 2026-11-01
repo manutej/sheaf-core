@@ -121,3 +121,50 @@ mod mulmod_tests {
         }
     }
 }
+
+/// FIX-BEND-SHEAF-001: Bend's sheaf-is-prime-001 only covered p < 2^16. These check `is_prime` against an independent
+/// trial-division reference near 2^32 (exhaustive windows and a proptest), plus known 64-bit primes/composites.
+#[cfg(test)]
+mod is_prime_tests {
+    use super::is_prime;
+    use proptest::prelude::*;
+
+    /// Independent reference: trial division by 2 and odd d with d*d <= n (u64, no shared code with Miller–Rabin).
+    fn reference(n: i64) -> bool {
+        if n < 2 { return false; }
+        let n = n as u64;
+        if n % 2 == 0 { return n == 2; }
+        let mut d = 3u64;
+        while d * d <= n { if n % d == 0 { return false; } d += 2; }
+        true
+    }
+
+    #[test]
+    fn is_prime_exhaustive_windows_near_2_32() {
+        let t: i64 = 1 << 32;
+        for c in [t, (1i64 << 31), (1i64 << 33)] {
+            for n in (c - 2000)..=(c + 2000) { assert_eq!(is_prime(n), reference(n), "n={n}"); }
+        }
+    }
+
+    #[test]
+    fn is_prime_known_values() {
+        // primes: largest below 2^32, smallest above 2^32, Bend's pmax, largest below 2^63
+        for p in [4294967291i64, 4294967311, 2147483647, 9223372036854775783] { assert!(is_prime(p), "{p}"); }
+        // composites: 2^32±1, 2^32-1 = 3·5·17·257·65537, F5 = 641·6700417, 65521·65537, strong pseudoprimes
+        // to small bases (3215031751 = 151·751·28351, 3825123056546413051)
+        for n in [4294967296i64, 4294967295, 4294967297, 65521 * 65537, 3215031751, 3825123056546413051,
+                  4294967291 * 2, 4294967291 * 3] {
+            assert!(!is_prime(n), "{n}");
+        }
+        for n in [i64::MIN, -7, -1, 0, 1] { assert!(!is_prime(n), "{n}"); }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(2048))]
+        #[test]
+        fn is_prime_matches_trial_division_near_2_32(n in (1i64 << 32) - (1 << 24)..=(1i64 << 32) + (1 << 24)) {
+            prop_assert_eq!(is_prime(n), reference(n));
+        }
+    }
+}
