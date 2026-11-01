@@ -63,7 +63,19 @@ pub struct H0Report {
     pub near_zero_ambiguous: bool,
     pub cut_margin_ratio: Option<f64>,
     pub lower_bound_only: bool,
+    /// solver certainty for h0, separate from near_zero_ambiguous (sheaf-glue-graph-001 :292)
+    pub status: H0Status,
     pub wording: &'static str,
+}
+
+/// `lower_bound_only` wins over `not_converged`; `converged` only when the solver converged and h0 is not a lower bound.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum H0Status { Converged, NotConverged, LowerBoundOnly }
+impl H0Status {
+    pub fn from_flags(converged: bool, lower_bound_only: bool) -> Self {
+        if lower_bound_only { H0Status::LowerBoundOnly } else if !converged { H0Status::NotConverged } else { H0Status::Converged }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

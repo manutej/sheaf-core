@@ -291,6 +291,7 @@ pub fn analyze(spec: &Spec, out_path: Option<String>) -> (Report, Vec<Effect>) {
             // numerically resolvable from 0 (near section), or the nearest nonzero eigenvalue is within 10x of its cut
             near_zero_ambiguous: !hc.cut_consistent || hc.near_sections || hc.margin_ratio.is_some_and(|m| m < 10.0),
             cut_margin_ratio: hc.margin_ratio.map(sig), lower_bound_only: sp.h0_lower_bound_only,
+            status: H0Status::from_flags(sp.converged, sp.h0_lower_bound_only),
             wording: "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction." },
         h1: H1Report { method: Exact, dim: h1, rule: "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut" },
         spectral: SpectralReport { method: Exact, solver: sp.method, l0_smallest: small.iter().map(|&x| sig(x)).collect(),

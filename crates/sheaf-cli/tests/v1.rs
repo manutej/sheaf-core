@@ -132,3 +132,23 @@ fn adversarial_overflowing_entries_refused_not_panicking() {
     let s = sheaf_cli::v1::parse(ok).unwrap();
     let _ = sheaf_cli::v1::analyze(&s, None);
 }
+
+#[test]
+fn v1_h0_status_separates_certainty_from_ambiguity_sheaf_glue_graph_001() {
+    // Bend sheaf-glue-graph-001 :292: cut consistent, no near sections, margin >= 10 but converged=false (or
+    // lower_bound_only=true) gives near_zero_ambiguous=false. Status must not say converged in those 3/32 cases.
+    use sheaf_cli::report::H0Status;
+    for converged in [false, true] { for lower in [false, true] {
+        let s = H0Status::from_flags(converged, lower);
+        assert_eq!(s == H0Status::Converged, converged && !lower, "converged={converged} lower={lower}");
+        if lower { assert_eq!(s, H0Status::LowerBoundOnly); }
+    } }
+    assert_eq!(serde_json::to_value(H0Status::NotConverged).unwrap(), "not_converged");
+    assert_eq!(serde_json::to_value(H0Status::LowerBoundOnly).unwrap(), "lower_bound_only");
+    let (r, _) = v1::analyze(&v1::parse(TRI).unwrap(), None);
+    assert_eq!(r.h0.status, H0Status::from_flags(r.spectral.converged, r.h0.lower_bound_only));
+    let v = r.to_value();
+    assert_eq!(v["h0"]["status"], "converged");
+    assert_eq!(v["h0"]["near_zero_ambiguous"], false);
+    assert_eq!(v["format"], "frontier-sheaf/report-v1");
+}
