@@ -1,3 +1,7 @@
+> **SUPERSEDED (2026-11-02).** This was written before the Touchstone Brief was read. The verification protocol is Touchstone;
+> the laws are the typed ontology in `products/laws` (generated view `products/laws/LAWS.md`); the gate is `products/gates/atom_gate.sh`.
+> Kept for history. Its G2 (`run_experiments.py`, a Python/numpy oracle) is not a gate: Python is banned on the verification path.
+
 # Verification loop engine — design v0.1
 
 Goal: every change an agent proposes reaches `main` only after it passes gates that the agent cannot

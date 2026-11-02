@@ -94,7 +94,7 @@ pub fn contradiction() -> (Graph, Vec<(String, f64)>) {
     ];
     for (a, b, s) in rel { g.edge(a, b, *s, if *s > 0.0 { "agrees" } else { "contradicts" }); }
     // connect our laws to their globals so the pins propagate
-    for (a, b, _) in rel { if !b.starts_with("v1.") { let mut cur = *b; while let Some(p) = all.iter().find(|l| l.id == cur).and_then(|l| l.parent) { g.edge(cur, p, 1.0, "refines"); cur = p; } } }
+    for (_a, b, _) in rel { if !b.starts_with("v1.") { let mut cur = *b; while let Some(p) = all.iter().find(|l| l.id == cur).and_then(|l| l.parent) { g.edge(cur, p, 1.0, "refines"); cur = p; } } }
     let pins = all.iter().filter(|l| l.layer == crate::Layer::Global).map(|l| (l.id.to_string(), 1.0)).collect();
     (g, pins)
 }

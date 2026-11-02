@@ -1,3 +1,8 @@
+> **Status note (2026-11-02, ontology v0.2).** The laws for this spec now live in `products/laws` (typed registry, LAWS.md generated).
+> After three independent review seats: the share-based verdicts and the 5 % threshold of Spec v1 are retracted (G4); the Bend
+> classifier is never shipped as compiled output (G11: Rust ships); Python experiments are exploration only, never a gate;
+> Extend is folded into Analyze (the core runs `--boundary` on the same call); Ingest, Explain, Diff and Fill are stages.
+
 # sheaf-products — product specification v0.1
 
 Branch `verify-loop/products-v0` (worktree of `manutej/sheaf-core`). Date 2026-11-02.

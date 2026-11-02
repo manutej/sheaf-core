@@ -1,4 +1,5 @@
-//! sheaf-kit: the discrete verdict layer. Transcribed from products/bend/main.bend (proved there) and
+//! sheaf-kit: the discrete verdict layer. Transcribed from products/bend/main.bend (UNCHECKED until the atom gate
+//! records ALL PROOFS CHECK for it) and
 //! products/haskell/Laws.hs (enforced there); tests here carry the same law ids (bridge B).
 //!
 //! Types-tier laws live in the signatures:
@@ -59,7 +60,7 @@ pub fn classify(cert: Cert, ev: Evidence) -> Verdict {
 }
 
 /// `agree`: the core's Hodge split and the product's Circulate agree. Disagreement is a HOLE, never averaged.
-pub fn to_receipt(v: Verdict, agree: bool) -> Receipt {
+pub fn to_receipt(agree: bool, v: Verdict) -> Receipt {
     if !agree { return Receipt::Hole; }
     match v {
         Verdict::Consistent => Receipt::Holds,
@@ -117,8 +118,24 @@ pub fn bridge_table() -> Vec<&'static str> {
         classify(t, ev(true, false, 3, 3, 0, 1)).show(),
         classify(t, ev(true, false, 2, 3, 5, 5)).show(),
         classify(t, ev(true, false, 2, 3, 4, 5)).show(),
-        to_receipt(Verdict::LoopConflict, false).show(),
+        to_receipt(false, Verdict::LoopConflict).show(),
         join(Receipt::Broken, Receipt::Blocked).show(),
         join_all(&[Some(Receipt::Holds), None, Some(Receipt::Holds)]).show(),
     ]
+}
+
+/// Bridge B, full domain: the same rows, in the same order, as `runghc Laws.hs fulltable`.
+pub fn full_table() -> Vec<String> {
+    let bools = [false, true];
+    let b = |t: bool| if t { "1" } else { "0" };
+    let vs = [Verdict::Consistent, Verdict::FixableNodes, Verdict::LoopConflict, Verdict::Underdetermined, Verdict::Inconclusive];
+    let rs = [Receipt::Holds, Receipt::Broken, Receipt::Blocked, Receipt::Hole];
+    let mut out = vec![];
+    for c in bools { for bo in bools { for x in bools { for ci in 0..=6u64 { for tc in 0..=6u64 { for d in 0..=6u64 { for td in 0..=6u64 {
+        let ev = Evidence { bounded: bo, xonly: x, circ: Ticks::new(ci), tol_c: Ticks::new(tc), disc: Ticks::new(d), tol_d: Ticks::new(td) };
+        out.push(format!("{} {} {} {ci} {tc} {d} {td} {}", b(c), b(bo), b(x), classify(Cert { certified: c }, ev).show()));
+    } } } } } } }
+    for a in bools { for v in vs { out.push(format!("receipt {} {} {}", b(a), v.show(), to_receipt(a, v).show())); } }
+    for p in rs { for q in rs { out.push(format!("join {} {} {}", p.show(), q.show(), join(p, q).show())); } }
+    out
 }

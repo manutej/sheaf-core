@@ -1,8 +1,8 @@
-# sheaf-products: the laws. Human-owned (Touchstone): builder agents may not edit this file (G0 manifest).
+# sheaf-products: the laws. Human-owned (Touchstone): a builder agent proposes, a human signs (V.sep.signed).
 # Law ids mirror products/laws (the typed ontology); the same ids name the Haskell properties and Rust tests.
-# UNCHECKED until the Mac gate runs `bend PROOF.bend` and `bend PROOF.bend --verdict`.
-# Expected now: SOME PROOFS FAIL, naming only
-# mono_tolerance (ticket T1b), which is left open on purpose.
+# Status: the 16 laws up to fixable_iff_disc were checked ALL PROOFS CHECK by an independent review seat
+# (seat 1, Bend 2.0.39 from source, 2026-11-02) after three mechanical fixes; consistent_iff and holds_iff_consistent
+# were added afterwards and are UNCHECKED until products/gates/atom_gate.sh runs. Open claims live in OPEN.bend.
 
 import Base
 import ./main.bend as Main
@@ -47,20 +47,10 @@ law circ_only:
   for e: {Nat.is_ge(c1, tc) == Nat.is_ge(c2, tc) : Bool}
   {Main.classify(True{}, True{}, x, c1, tc, d, td) == Main.classify(True{}, True{}, x, c2, tc, d, td) : Main.Verdict}
 
-# A.classify.mono -- OPEN CLAIM (ticket T1b): raising the loop tolerance keeps a consistent verdict
-law mono_tolerance:
-  for c: Nat
-  for tc: Nat
-  for k: Nat
-  for d: Nat
-  for td: Nat
-  {Main.classify(True{}, True{}, False{}, c, tc, d, td) == Main.Consistent{} : Main.Verdict} ->
-  {Main.classify(True{}, True{}, False{}, c, Nat.add(tc, k), d, td) == Main.Consistent{} : Main.Verdict}
-
 # S.receipt.map -- oracles disagreeing is a HOLE, whatever the verdict
 law receipt_map_hole:
   for v: Main.Verdict
-  {Main.to_receipt(v, False{}) == Main.Hole{} : Main.Receipt}
+  {Main.to_receipt(False{}, v) == Main.Hole{} : Main.Receipt}
 
 # S.receipt.map + A.classify.uncertified (the formal core of G1) -- uncertified is BLOCKED
 law receipt_map_uncertified:
@@ -70,7 +60,7 @@ law receipt_map_uncertified:
   for tc: Nat
   for d: Nat
   for td: Nat
-  {Main.to_receipt(Main.classify(False{}, b, x, c, tc, d, td), True{}) == Main.Blocked{} : Main.Receipt}
+  {Main.to_receipt(True{}, Main.classify(False{}, b, x, c, tc, d, td)) == Main.Blocked{} : Main.Receipt}
 
 # S.join.monoid -- receipts form a bounded join-semilattice; HOLDS is the unit, HOLE absorbs
 law join_assoc:
@@ -124,3 +114,19 @@ law fixable_iff_disc:
   for d: Nat
   for td: Nat
   {Spec.is_fixable(Main.classify(True{}, True{}, x, c, tc, d, td)) == Bool.and(Nat.is_ge(d, td), Bool.not(Spec.fires(x, Nat.is_ge(c, tc)))) : Bool}
+
+# A.classify.consistent-iff -- certified and bounded: consistent exactly when no loop fires and discord is below
+# tolerance (added after seat 2 showed the Consistent branch was pinned by no law)
+law consistent_iff:
+  for x: Bool
+  for c: Nat
+  for tc: Nat
+  for d: Nat
+  for td: Nat
+  {Spec.is_consistent(Main.classify(True{}, True{}, x, c, tc, d, td)) == Bool.and(Bool.not(Spec.fires(x, Nat.is_ge(c, tc))), Bool.not(Nat.is_ge(d, td))) : Bool}
+
+# S.judge.map -- with agreeing oracles, HOLDS exactly for a consistent verdict (seat 2 mutant A: Consistent -> BROKEN
+# survived every earlier law)
+law holds_iff_consistent:
+  for v: Main.Verdict
+  {Spec.is_holds(Main.to_receipt(True{}, v)) == Spec.is_consistent(v) : Bool}

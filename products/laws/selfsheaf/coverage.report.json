@@ -9,15 +9,15 @@
   "edges_by_harmonic_energy": [],
   "energy_xLx": 0.0,
   "extension": {
-    "boundary_dofs": 43,
-    "boundary_nodes": 43,
+    "boundary_dofs": 106,
+    "boundary_nodes": 106,
     "converged": true,
-    "energy": 10.1988268697,
+    "energy": 17.8810514894,
     "h0_relative": 0,
     "iters": 0,
     "method": "exact",
     "note": "values = the minimum-norm minimiser of ||delta x||^2 with x_B fixed; if not unique it is determined only up to H0(X,B;F)",
-    "residual_rel": 5.90729484827e-17,
+    "residual_rel": 6.1598662242e-17,
     "route": "dense",
     "unique": true,
     "uniqueness_rule": "unique iff dim H0(X,B;F) = dim ker L_II = 0 (Hansen-Ghrist Prop 4.1); zero cut: per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
@@ -26,175 +26,252 @@
         "boundary": false,
         "id": "ROOT",
         "value": [
-          0.320665338216
+          0.0511994584325
         ]
       },
       {
         "boundary": false,
-        "id": "op:Encode",
+        "id": "op:Ingest",
         "value": [
-          0.0549795751007
+          0.00904487290429
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Corpus",
+        "value": [
+          0.00904487290429
         ]
       },
       {
         "boundary": false,
         "id": "color:DomainGraph",
         "value": [
-          0.0712666912727
+          0.0152476050688
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Encode",
+        "value": [
+          0.0170527818851
         ]
       },
       {
         "boundary": false,
         "id": "color:Spec",
         "value": [
-          0.103407522732
+          0.026269210188
         ]
       },
       {
         "boundary": false,
         "id": "op:Validate",
         "value": [
-          0.151835470363
+          0.035485638491
         ]
       },
       {
         "boundary": false,
         "id": "color:ValidSpec",
         "value": [
-          0.377721220465
+          0.143489803816
         ]
       },
       {
         "boundary": false,
         "id": "op:Analyze",
         "value": [
-          0.699639202699
+          0.35090599161
         ]
       },
       {
         "boundary": false,
-        "id": "color:Report",
+        "id": "color:CorePolicy",
         "value": [
-          0.323910221687
-        ]
-      },
-      {
-        "boundary": false,
-        "id": "op:Extend",
-        "value": [
-          0.54032628843
+          0.35090599161
         ]
       },
       {
         "boundary": false,
         "id": "color:Boundary",
         "value": [
-          0.54032628843
+          0.35090599161
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Outcome",
+        "value": [
+          0.117354459155
         ]
       },
       {
         "boundary": false,
         "id": "op:Certify",
         "value": [
-          0.174937765071
+          0.0378240350703
         ]
       },
       {
         "boundary": false,
         "id": "color:Cert",
         "value": [
-          0.241020462301
+          0.15337054573
         ]
       },
       {
         "boundary": false,
         "id": "op:Circulate",
         "value": [
-          0.119083920368
+          0.0440777813477
         ]
       },
       {
         "boundary": false,
         "id": "color:Circ",
         "value": [
-          0.118088982579
+          0.0415885304287
         ]
       },
       {
         "boundary": false,
         "id": "op:Quantize",
         "value": [
-          0.11709404479
+          0.0563995126703
         ]
       },
       {
         "boundary": false,
-        "id": "color:Policy",
+        "id": "color:DomainPolicy",
         "value": [
-          0.11709404479
+          0.0563995126703
         ]
       },
       {
         "boundary": false,
         "id": "color:Evidence",
         "value": [
-          0.230379640687
+          0.163585112288
         ]
       },
       {
         "boundary": false,
         "id": "op:Classify",
         "value": [
-          0.343665236585
+          0.270770711906
         ]
       },
       {
         "boundary": false,
         "id": "color:Verdict",
         "value": [
-          0.215609522015
+          0.147529504587
         ]
       },
       {
         "boundary": false,
         "id": "op:Attribute",
         "value": [
-          0.0875538074446
+          0.0242882972681
         ]
       },
       {
         "boundary": false,
         "id": "color:Finding",
         "value": [
-          0.146006096346
+          0.036478893144
         ]
       },
       {
         "boundary": false,
-        "id": "op:Receipt",
+        "id": "op:Judge",
         "value": [
-          0.204458385248
+          0.151516890213
         ]
       },
       {
         "boundary": false,
-        "id": "color:Receipt",
+        "id": "color:TsVerdict",
         "value": [
-          0.261902372532
+          0.168028835028
         ]
       },
       {
         "boundary": false,
         "id": "op:Join",
         "value": [
-          0.281050368293
+          0.219803965062
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Bind",
+        "value": [
+          0.0292153897388
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Manifest",
+        "value": [
+          0.0292153897388
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Receipt",
+        "value": [
+          0.0292153897388
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Explain",
+        "value": [
+          0.00830327664308
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Explanation",
+        "value": [
+          0.00830327664308
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Diff",
+        "value": [
+          0.0145511807509
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Delta",
+        "value": [
+          0.0145511807509
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Fill",
+        "value": [
+          0.0129260366432
         ]
       },
       {
         "boundary": false,
         "id": "G0",
         "value": [
-          0.106888446072
+          0.0102398916865
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.bind.manifest",
+        "value": [
+          0.0
         ]
       },
       {
@@ -208,12 +285,33 @@
         "boundary": false,
         "id": "G1",
         "value": [
-          0.337106869535
+          0.135154642879
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.certify.wf",
+        "value": [
+          0.0513555534715
         ]
       },
       {
         "boundary": true,
-        "id": "S.certify.wf",
+        "id": "A.certify.converged",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.certify.cut",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.certify.unique-null",
         "value": [
           0.0
         ]
@@ -227,7 +325,7 @@
       },
       {
         "boundary": true,
-        "id": "S.receipt.map",
+        "id": "S.judge.map",
         "value": [
           0.5
         ]
@@ -236,21 +334,28 @@
         "boundary": false,
         "id": "I.analyze.certify",
         "value": [
-          0.309758141368
+          0.131807862488
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.analyze.certify-error",
+        "value": [
+          0.0
         ]
       },
       {
         "boundary": false,
         "id": "G2",
         "value": [
-          0.0453327582083
+          0.00428799059254
         ]
       },
       {
         "boundary": false,
         "id": "S.attribute.projection",
         "value": [
-          0.0201814752349
+          0.00300056180582
         ]
       },
       {
@@ -261,17 +366,24 @@
         ]
       },
       {
-        "boundary": false,
-        "id": "G3",
+        "boundary": true,
+        "id": "I.analyze.attribute",
         "value": [
-          0.544252086076
+          0.0
         ]
       },
       {
         "boundary": false,
-        "id": "S.join.monoid",
+        "id": "G3",
         "value": [
-          0.400595092162
+          0.115803798406
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.thread-pin",
+        "value": [
+          0.0
         ]
       },
       {
@@ -283,16 +395,37 @@
       },
       {
         "boundary": false,
+        "id": "S.join.monoid",
+        "value": [
+          0.193953145537
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.circulate.forest",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.bind.binding",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
         "id": "G4",
         "value": [
-          0.354285735801
+          0.19759041859
         ]
       },
       {
         "boundary": false,
         "id": "A.circulate.exact-zero",
         "value": [
-          0.117798724734
+          0.0594174349383
         ]
       },
       {
@@ -306,19 +439,33 @@
         "boundary": false,
         "id": "A.classify.circ-only",
         "value": [
-          0.322746839084
+          0.281086471659
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.circulate.domain",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.quantize.floor",
+        "value": [
+          0.153636236812
         ]
       },
       {
         "boundary": false,
         "id": "G5",
         "value": [
-          0.481731860746
+          0.333913744807
         ]
       },
       {
         "boundary": true,
-        "id": "S.quantize.floor",
+        "id": "A.quantize.disc-source",
         "value": [
           0.0
         ]
@@ -334,7 +481,7 @@
         "boundary": false,
         "id": "G6",
         "value": [
-          0.58883650322
+          0.317078982108
         ]
       },
       {
@@ -346,21 +493,168 @@
       },
       {
         "boundary": true,
+        "id": "S.analyze.hodge-local",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
         "id": "S.join.cover",
         "value": [
           0.5
         ]
       },
       {
+        "boundary": true,
+        "id": "I.judge.join",
+        "value": [
+          0.0
+        ]
+      },
+      {
         "boundary": false,
         "id": "G7",
         "value": [
-          0.106888446072
+          0.0138377741885
         ]
       },
       {
         "boundary": true,
-        "id": "S.receipt.tier",
+        "id": "S.bind.tier",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.explain.wording",
+        "value": [
+          0.00899470625503
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G8",
+        "value": [
+          0.0274717044348
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.surface.envelope",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.explain.pure",
+        "value": [
+          0.0126493371025
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G9",
+        "value": [
+          0.00465449622114
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.mut.L0",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.mut.L1",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.mut.L2",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.mut.L3",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.mut.L4",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G10",
+        "value": [
+          0.0073142083475
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.sep.signed",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.sep.fence",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.sep.family",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G11",
+        "value": [
+          0.0102398916865
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.lang.no-python",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "V.lang.ship-rust",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.ingest.total-or-reject",
+        "value": [
+          0.0480665052612
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.ingest.ids-stable",
         "value": [
           0.0
         ]
@@ -369,7 +663,7 @@
         "boundary": false,
         "id": "S.encode.valid",
         "value": [
-          0.0871437762793
+          0.0280810214528
         ]
       },
       {
@@ -383,7 +677,7 @@
         "boundary": false,
         "id": "A.encode.shapes",
         "value": [
-          0.0458534255319
+          0.0146429649581
         ]
       },
       {
@@ -397,110 +691,26 @@
         "boundary": false,
         "id": "S.encode.mode",
         "value": [
-          0.178903811949
-        ]
-      },
-      {
-        "boundary": false,
-        "id": "S.circulate.exact",
-        "value": [
-          0.116711346117
+          0.116988842231
         ]
       },
       {
         "boundary": true,
-        "id": "A.circulate.basis-size",
-        "value": [
-          0.0
-        ]
-      },
-      {
-        "boundary": false,
-        "id": "S.quantize.threshold",
-        "value": [
-          0.15712659353
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "S.quantize.nonfinite",
-        "value": [
-          0.0
-        ]
-      },
-      {
-        "boundary": false,
-        "id": "S.classify.total",
-        "value": [
-          0.457891611518
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.classify.undetermined",
-        "value": [
-          0.5
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.classify.xonly",
-        "value": [
-          0.5
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.classify.mono",
-        "value": [
-          0.5
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.classify.loop-iff",
-        "value": [
-          0.5
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.classify.disc-iff",
-        "value": [
-          0.5
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.attribute.loop-blame",
+        "id": "S.encode.one-cochain",
         "value": [
           0.0
         ]
       },
       {
         "boundary": true,
-        "id": "A.attribute.fixable",
-        "value": [
-          0.0
-        ]
-      },
-      {
-        "boundary": false,
-        "id": "A.attribute.fill",
-        "value": [
-          0.0319791894786
-        ]
-      },
-      {
-        "boundary": true,
-        "id": "A.attribute.x-only",
+        "id": "S.validate.mirror",
         "value": [
           0.0
         ]
       },
       {
         "boundary": true,
-        "id": "S.receipt.binding",
+        "id": "S.analyze.outcome",
         "value": [
           0.0
         ]
@@ -523,56 +733,294 @@
         "boundary": false,
         "id": "S.analyze.holonomy",
         "value": [
-          0.684641646167
+          0.516165470067
         ]
       },
       {
         "boundary": true,
-        "id": "S.validate.mirror",
+        "id": "S.analyze.top-complete",
         "value": [
           0.0
         ]
       },
       {
         "boundary": true,
-        "id": "S.extend.pins",
+        "id": "S.analyze.extension-pins",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.analyze.extension-unique",
+        "value": [
+          0.162020211496
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.extension-minimal",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.certify.policy",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.circulate.exact",
+        "value": [
+          0.0574182048459
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.circulate.basis-size",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.quantize.threshold",
+        "value": [
+          0.0423316552101
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.quantize.compare-once",
         "value": [
           0.0
         ]
       },
       {
         "boundary": true,
-        "id": "S.extend.unique",
+        "id": "A.quantize.saturate",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.quantize.nonfinite",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.classify.total",
+        "value": [
+          0.4685356139
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.undetermined",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.xonly",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.mono",
         "value": [
           1.0
         ]
       },
       {
         "boundary": true,
-        "id": "S.extend.minimal",
+        "id": "A.classify.loop-iff",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.disc-iff",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.consistent-iff",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.classify.h0-policy",
+        "value": [
+          0.201306989951
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.loop-blame",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.fixable",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.fill",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.x-only",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.context-only",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.attribute.ranking",
+        "value": [
+          0.00757235521995
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.join.is-max",
         "value": [
           1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.join.no-drop",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.diff.keyed",
+        "value": [
+          0.043451659719
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.diff.partition",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.diff.reflexive",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.diff.exit",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.fill.determined-only",
+        "value": [
+          0.0493602265075
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.fill.ask",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.fill.idempotent",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.ingest.encode",
+        "value": [
+          0.0
         ]
       },
       {
         "boundary": false,
         "id": "I.encode.validate",
         "value": [
-          0.126213138256
+          0.0431548169416
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.validate.analyze",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.validate.circulate",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.analyze.quantize",
+        "value": [
+          0.0
         ]
       },
       {
         "boundary": false,
-        "id": "I.encode.attribute",
+        "id": "I.circulate.quantize",
         "value": [
-          0.0469665351884
+          0.271097183491
         ]
       },
       {
-        "boundary": false,
-        "id": "I.circulate.analyze",
+        "boundary": true,
+        "id": "I.certify.classify",
         "value": [
-          0.341435009415
+          0.0
         ]
       },
       {
@@ -583,10 +1031,108 @@
         ]
       },
       {
-        "boundary": false,
-        "id": "I.classify.receipt",
+        "boundary": true,
+        "id": "I.ingest.attribute",
         "value": [
-          0.282279765557
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.classify.attribute",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.circulate.attribute",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.attribute.judge",
+        "value": [
+          0.20273995759
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.certify.judge",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.join.bind",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.attribute.bind",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.attribute.explain",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.attribute.diff",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.attribute.fill",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.ingest.fill",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.encode.attribute",
+        "value": [
+          0.0114072674364
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.explain.loop-blame",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.explain.resolve",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.memory.status-table",
+        "value": [
+          0.0
         ]
       },
       {
@@ -626,6 +1172,13 @@
       },
       {
         "boundary": true,
+        "id": "P.recon.rate-triangle",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
         "id": "P.recon.unit-slip-is-exact",
         "value": [
           0.0
@@ -634,6 +1187,13 @@
       {
         "boundary": true,
         "id": "P.recon.minor-units",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.recon.dated-rate",
         "value": [
           0.0
         ]
@@ -656,12 +1216,54 @@
         "boundary": true,
         "id": "P.consensus.frame-holonomy",
         "value": [
-          1.0
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.consensus.outlier-rank",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.consensus.round-diff",
+        "value": [
+          0.0
         ]
       },
       {
         "boundary": true,
         "id": "P.studio.traceable",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.studio.steps",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.studio.pin-is-boundary",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.schema.holonomy-drop",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.translation.loop-is-harmonic",
         "value": [
           0.0
         ]
@@ -671,7 +1273,7 @@
   "format": "frontier-sheaf/report-v1",
   "h0": {
     "cut_consistent_with_zero_tol": true,
-    "cut_margin_ratio": 98039678.5141,
+    "cut_margin_ratio": 44673298.6105,
     "dim": 1,
     "found_zero_by_solver": 0,
     "known_kernel_dim": 1,
@@ -680,17 +1282,17 @@
     "method": "exact",
     "near_zero_ambiguous": false,
     "smallest_counted_nonzero": {
-      "residual": 2.48070178493e-14,
-      "value": 0.313726971245
+      "residual": 3.97453641457e-14,
+      "value": 0.259105131941
     },
     "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
     "zero_policy": "per_component_eig",
     "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
-    "zero_tol": 3.2e-9,
-    "zero_tol_min": 3.2e-9
+    "zero_tol": 5.8e-9,
+    "zero_tol_min": 5.8e-9
   },
   "h1": {
-    "dim": 116,
+    "dim": 245,
     "method": "exact",
     "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
   },
@@ -704,7 +1306,7 @@
     "method": "exact",
     "norm2": 0.0,
     "null_random_gaussian": {
-      "analytic_expectation_h1_over_dimC1": 0.56038647343,
+      "analytic_expectation_h1_over_dimC1": 0.580568720379,
       "frac_ge_observed": null,
       "mean": null,
       "p05": null,
@@ -723,13 +1325,13 @@
   },
   "input": {
     "components": 1,
-    "dim_C0": 92,
-    "dim_C1": 207,
-    "edges": 207,
+    "dim_C0": 178,
+    "dim_C1": 422,
+    "edges": 422,
     "has_w": false,
     "has_x": true,
     "known_constant_components": 1,
-    "nodes": 92
+    "nodes": 178
   },
   "method": "exact",
   "nodes_by_abs_potential": [],
@@ -737,35 +1339,35 @@
   "spectral": {
     "L0_smallest": [
       0.0,
-      0.313726971245,
-      0.329043797384,
-      0.40888548834,
-      0.4873683048,
-      0.594455072546,
-      0.731410505845
+      0.259105131941,
+      0.359598426858,
+      0.400103776941,
+      0.40625221155,
+      0.467208150373,
+      0.519874756182
     ],
     "L1_graph": {
-      "kernel_dim": 116,
+      "kernel_dim": 245,
       "mapped_pairs_checked": 7,
-      "max_mapped_residual": 1.29304649808e-13,
+      "max_mapped_residual": 3.11690156693e-13,
       "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
     },
     "converged": true,
-    "gap_k": 0.136955433299,
+    "gap_k": 0.0526666058088,
     "inner_cg": null,
-    "lambda_max_bound": 32.0,
+    "lambda_max_bound": 58.0,
     "method": "exact",
     "rounds": 1,
     "solver": "dense-evd",
     "solver_pairs_residuals": [
-      2.48070178493e-14,
-      1.89848446954e-14,
-      2.01863817716e-14,
-      2.33499865404e-14,
-      1.49825960175e-14,
-      1.01316158105e-14,
-      1.63676779557e-14
+      3.97453641457e-14,
+      6.46874634341e-14,
+      3.78952145893e-14,
+      8.52315984799e-14,
+      2.23248789647e-14,
+      2.87017511329e-14,
+      8.04253771266e-14
     ],
-    "spectral_gap": 0.313726971245
+    "spectral_gap": 0.259105131941
   }
 }

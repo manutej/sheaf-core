@@ -8,44 +8,68 @@ import ./main.bend as Main
 # not_loop(v) is Empty exactly at LoopConflict, so {nodes(b) == LoopConflict} proves Empty.
 def not_loop(v: Main.Verdict) -> Type:
   match v:
-    case Consistent{}:
+    case Main.Consistent{}:
       Unit
-    case FixableNodes{}:
+    case Main.FixableNodes{}:
       Unit
-    case LoopConflict{}:
+    case Main.LoopConflict{}:
       Empty
-    case Underdetermined{}:
+    case Main.Underdetermined{}:
       Unit
-    case Inconclusive{}:
+    case Main.Inconclusive{}:
       Unit
 
 # Observers used to state the exact verdict partition (A.classify.loop-iff, A.classify.disc-iff)
 def is_loop(v: Main.Verdict) -> Bool:
   match v:
-    case LoopConflict{}:
+    case Main.LoopConflict{}:
       True{}
-    case Consistent{}:
+    case Main.Consistent{}:
       False{}
-    case FixableNodes{}:
+    case Main.FixableNodes{}:
       False{}
-    case Underdetermined{}:
+    case Main.Underdetermined{}:
       False{}
-    case Inconclusive{}:
+    case Main.Inconclusive{}:
       False{}
 
 def is_fixable(v: Main.Verdict) -> Bool:
   match v:
-    case FixableNodes{}:
+    case Main.FixableNodes{}:
       True{}
-    case Consistent{}:
+    case Main.Consistent{}:
       False{}
-    case LoopConflict{}:
+    case Main.LoopConflict{}:
       False{}
-    case Underdetermined{}:
+    case Main.Underdetermined{}:
       False{}
-    case Inconclusive{}:
+    case Main.Inconclusive{}:
       False{}
 
 # the loop fires: observations exist (not x-only) and the max circulation clears its tolerance
 def fires(x: Bool, co: Bool) -> Bool:
   Bool.and(Bool.not(x), co)
+
+def is_consistent(v: Main.Verdict) -> Bool:
+  match v:
+    case Main.Consistent{}:
+      True{}
+    case Main.FixableNodes{}:
+      False{}
+    case Main.LoopConflict{}:
+      False{}
+    case Main.Underdetermined{}:
+      False{}
+    case Main.Inconclusive{}:
+      False{}
+
+def is_holds(r: Main.Receipt) -> Bool:
+  match r:
+    case Main.Holds{}:
+      True{}
+    case Main.Broken{}:
+      False{}
+    case Main.Blocked{}:
+      False{}
+    case Main.Hole{}:
+      False{}

@@ -42,201 +42,201 @@ def Laws.receipt_map_uncertified(b, x, c, tc, d, td):
 
 def Laws.join_assoc(a, b, c):
   match a b c:
-    case Holds{} Holds{} Holds{}:
+    case Main.Holds{} Main.Holds{} Main.Holds{}:
       {==}
-    case Holds{} Holds{} Broken{}:
+    case Main.Holds{} Main.Holds{} Main.Broken{}:
       {==}
-    case Holds{} Holds{} Blocked{}:
+    case Main.Holds{} Main.Holds{} Main.Blocked{}:
       {==}
-    case Holds{} Holds{} Hole{}:
+    case Main.Holds{} Main.Holds{} Main.Hole{}:
       {==}
-    case Holds{} Broken{} Holds{}:
+    case Main.Holds{} Main.Broken{} Main.Holds{}:
       {==}
-    case Holds{} Broken{} Broken{}:
+    case Main.Holds{} Main.Broken{} Main.Broken{}:
       {==}
-    case Holds{} Broken{} Blocked{}:
+    case Main.Holds{} Main.Broken{} Main.Blocked{}:
       {==}
-    case Holds{} Broken{} Hole{}:
+    case Main.Holds{} Main.Broken{} Main.Hole{}:
       {==}
-    case Holds{} Blocked{} Holds{}:
+    case Main.Holds{} Main.Blocked{} Main.Holds{}:
       {==}
-    case Holds{} Blocked{} Broken{}:
+    case Main.Holds{} Main.Blocked{} Main.Broken{}:
       {==}
-    case Holds{} Blocked{} Blocked{}:
+    case Main.Holds{} Main.Blocked{} Main.Blocked{}:
       {==}
-    case Holds{} Blocked{} Hole{}:
+    case Main.Holds{} Main.Blocked{} Main.Hole{}:
       {==}
-    case Holds{} Hole{} Holds{}:
+    case Main.Holds{} Main.Hole{} Main.Holds{}:
       {==}
-    case Holds{} Hole{} Broken{}:
+    case Main.Holds{} Main.Hole{} Main.Broken{}:
       {==}
-    case Holds{} Hole{} Blocked{}:
+    case Main.Holds{} Main.Hole{} Main.Blocked{}:
       {==}
-    case Holds{} Hole{} Hole{}:
+    case Main.Holds{} Main.Hole{} Main.Hole{}:
       {==}
-    case Broken{} Holds{} Holds{}:
+    case Main.Broken{} Main.Holds{} Main.Holds{}:
       {==}
-    case Broken{} Holds{} Broken{}:
+    case Main.Broken{} Main.Holds{} Main.Broken{}:
       {==}
-    case Broken{} Holds{} Blocked{}:
+    case Main.Broken{} Main.Holds{} Main.Blocked{}:
       {==}
-    case Broken{} Holds{} Hole{}:
+    case Main.Broken{} Main.Holds{} Main.Hole{}:
       {==}
-    case Broken{} Broken{} Holds{}:
+    case Main.Broken{} Main.Broken{} Main.Holds{}:
       {==}
-    case Broken{} Broken{} Broken{}:
+    case Main.Broken{} Main.Broken{} Main.Broken{}:
       {==}
-    case Broken{} Broken{} Blocked{}:
+    case Main.Broken{} Main.Broken{} Main.Blocked{}:
       {==}
-    case Broken{} Broken{} Hole{}:
+    case Main.Broken{} Main.Broken{} Main.Hole{}:
       {==}
-    case Broken{} Blocked{} Holds{}:
+    case Main.Broken{} Main.Blocked{} Main.Holds{}:
       {==}
-    case Broken{} Blocked{} Broken{}:
+    case Main.Broken{} Main.Blocked{} Main.Broken{}:
       {==}
-    case Broken{} Blocked{} Blocked{}:
+    case Main.Broken{} Main.Blocked{} Main.Blocked{}:
       {==}
-    case Broken{} Blocked{} Hole{}:
+    case Main.Broken{} Main.Blocked{} Main.Hole{}:
       {==}
-    case Broken{} Hole{} Holds{}:
+    case Main.Broken{} Main.Hole{} Main.Holds{}:
       {==}
-    case Broken{} Hole{} Broken{}:
+    case Main.Broken{} Main.Hole{} Main.Broken{}:
       {==}
-    case Broken{} Hole{} Blocked{}:
+    case Main.Broken{} Main.Hole{} Main.Blocked{}:
       {==}
-    case Broken{} Hole{} Hole{}:
+    case Main.Broken{} Main.Hole{} Main.Hole{}:
       {==}
-    case Blocked{} Holds{} Holds{}:
+    case Main.Blocked{} Main.Holds{} Main.Holds{}:
       {==}
-    case Blocked{} Holds{} Broken{}:
+    case Main.Blocked{} Main.Holds{} Main.Broken{}:
       {==}
-    case Blocked{} Holds{} Blocked{}:
+    case Main.Blocked{} Main.Holds{} Main.Blocked{}:
       {==}
-    case Blocked{} Holds{} Hole{}:
+    case Main.Blocked{} Main.Holds{} Main.Hole{}:
       {==}
-    case Blocked{} Broken{} Holds{}:
+    case Main.Blocked{} Main.Broken{} Main.Holds{}:
       {==}
-    case Blocked{} Broken{} Broken{}:
+    case Main.Blocked{} Main.Broken{} Main.Broken{}:
       {==}
-    case Blocked{} Broken{} Blocked{}:
+    case Main.Blocked{} Main.Broken{} Main.Blocked{}:
       {==}
-    case Blocked{} Broken{} Hole{}:
+    case Main.Blocked{} Main.Broken{} Main.Hole{}:
       {==}
-    case Blocked{} Blocked{} Holds{}:
+    case Main.Blocked{} Main.Blocked{} Main.Holds{}:
       {==}
-    case Blocked{} Blocked{} Broken{}:
+    case Main.Blocked{} Main.Blocked{} Main.Broken{}:
       {==}
-    case Blocked{} Blocked{} Blocked{}:
+    case Main.Blocked{} Main.Blocked{} Main.Blocked{}:
       {==}
-    case Blocked{} Blocked{} Hole{}:
+    case Main.Blocked{} Main.Blocked{} Main.Hole{}:
       {==}
-    case Blocked{} Hole{} Holds{}:
+    case Main.Blocked{} Main.Hole{} Main.Holds{}:
       {==}
-    case Blocked{} Hole{} Broken{}:
+    case Main.Blocked{} Main.Hole{} Main.Broken{}:
       {==}
-    case Blocked{} Hole{} Blocked{}:
+    case Main.Blocked{} Main.Hole{} Main.Blocked{}:
       {==}
-    case Blocked{} Hole{} Hole{}:
+    case Main.Blocked{} Main.Hole{} Main.Hole{}:
       {==}
-    case Hole{} Holds{} Holds{}:
+    case Main.Hole{} Main.Holds{} Main.Holds{}:
       {==}
-    case Hole{} Holds{} Broken{}:
+    case Main.Hole{} Main.Holds{} Main.Broken{}:
       {==}
-    case Hole{} Holds{} Blocked{}:
+    case Main.Hole{} Main.Holds{} Main.Blocked{}:
       {==}
-    case Hole{} Holds{} Hole{}:
+    case Main.Hole{} Main.Holds{} Main.Hole{}:
       {==}
-    case Hole{} Broken{} Holds{}:
+    case Main.Hole{} Main.Broken{} Main.Holds{}:
       {==}
-    case Hole{} Broken{} Broken{}:
+    case Main.Hole{} Main.Broken{} Main.Broken{}:
       {==}
-    case Hole{} Broken{} Blocked{}:
+    case Main.Hole{} Main.Broken{} Main.Blocked{}:
       {==}
-    case Hole{} Broken{} Hole{}:
+    case Main.Hole{} Main.Broken{} Main.Hole{}:
       {==}
-    case Hole{} Blocked{} Holds{}:
+    case Main.Hole{} Main.Blocked{} Main.Holds{}:
       {==}
-    case Hole{} Blocked{} Broken{}:
+    case Main.Hole{} Main.Blocked{} Main.Broken{}:
       {==}
-    case Hole{} Blocked{} Blocked{}:
+    case Main.Hole{} Main.Blocked{} Main.Blocked{}:
       {==}
-    case Hole{} Blocked{} Hole{}:
+    case Main.Hole{} Main.Blocked{} Main.Hole{}:
       {==}
-    case Hole{} Hole{} Holds{}:
+    case Main.Hole{} Main.Hole{} Main.Holds{}:
       {==}
-    case Hole{} Hole{} Broken{}:
+    case Main.Hole{} Main.Hole{} Main.Broken{}:
       {==}
-    case Hole{} Hole{} Blocked{}:
+    case Main.Hole{} Main.Hole{} Main.Blocked{}:
       {==}
-    case Hole{} Hole{} Hole{}:
+    case Main.Hole{} Main.Hole{} Main.Hole{}:
       {==}
 
 def Laws.join_comm(a, b):
   match a b:
-    case Holds{} Holds{}:
+    case Main.Holds{} Main.Holds{}:
       {==}
-    case Holds{} Broken{}:
+    case Main.Holds{} Main.Broken{}:
       {==}
-    case Holds{} Blocked{}:
+    case Main.Holds{} Main.Blocked{}:
       {==}
-    case Holds{} Hole{}:
+    case Main.Holds{} Main.Hole{}:
       {==}
-    case Broken{} Holds{}:
+    case Main.Broken{} Main.Holds{}:
       {==}
-    case Broken{} Broken{}:
+    case Main.Broken{} Main.Broken{}:
       {==}
-    case Broken{} Blocked{}:
+    case Main.Broken{} Main.Blocked{}:
       {==}
-    case Broken{} Hole{}:
+    case Main.Broken{} Main.Hole{}:
       {==}
-    case Blocked{} Holds{}:
+    case Main.Blocked{} Main.Holds{}:
       {==}
-    case Blocked{} Broken{}:
+    case Main.Blocked{} Main.Broken{}:
       {==}
-    case Blocked{} Blocked{}:
+    case Main.Blocked{} Main.Blocked{}:
       {==}
-    case Blocked{} Hole{}:
+    case Main.Blocked{} Main.Hole{}:
       {==}
-    case Hole{} Holds{}:
+    case Main.Hole{} Main.Holds{}:
       {==}
-    case Hole{} Broken{}:
+    case Main.Hole{} Main.Broken{}:
       {==}
-    case Hole{} Blocked{}:
+    case Main.Hole{} Main.Blocked{}:
       {==}
-    case Hole{} Hole{}:
+    case Main.Hole{} Main.Hole{}:
       {==}
 
 def Laws.join_idem(a):
   match a:
-    case Holds{}:
+    case Main.Holds{}:
       {==}
-    case Broken{}:
+    case Main.Broken{}:
       {==}
-    case Blocked{}:
+    case Main.Blocked{}:
       {==}
-    case Hole{}:
+    case Main.Hole{}:
       {==}
 
 def Laws.join_unit_r(a):
   match a:
-    case Holds{}:
+    case Main.Holds{}:
       {==}
-    case Broken{}:
+    case Main.Broken{}:
       {==}
-    case Blocked{}:
+    case Main.Blocked{}:
       {==}
-    case Hole{}:
+    case Main.Hole{}:
       {==}
 
 def Laws.join_hole_absorbs(a):
   match a:
-    case Holds{}:
+    case Main.Holds{}:
       {==}
-    case Broken{}:
+    case Main.Broken{}:
       {==}
-    case Blocked{}:
+    case Main.Blocked{}:
       {==}
-    case Hole{}:
+    case Main.Hole{}:
       {==}
 
 def Laws.join_unit_l(a):
@@ -249,12 +249,12 @@ def join_hole_r(r: Main.Receipt) -> {Main.join(r, Main.Hole{}) == Main.Hole{} : 
 # hypothesis, turned around by Equal.sym so the rewrite replaces J with Hole
 def Laws.join_cover_missing_is_hole(xs, ys):
   match xs:
-    case End{}:
+    case Main.End{}:
       {==}
-    case Got{r, rest}:
+    case Main.Got{r, rest}:
       %Equal.sym(Main.Receipt, Main.join_all(Main.cat(rest, Main.Missing{ys})), Main.Hole{}, Laws.join_cover_missing_is_hole(rest, ys)) : {Main.join(r, _) == Main.Hole{} : Main.Receipt}
       join_hole_r(r)
-    case Missing{rest}:
+    case Main.Missing{rest}:
       {==}
 
 # the partition lemmas over arbitrary Bools (a computed value cannot be matched in place, so the
@@ -302,3 +302,38 @@ def Laws.loop_iff_circ(x, c, tc, d, td):
 
 def Laws.fixable_iff_disc(x, c, tc, d, td):
   fixable_lemma(x, Nat.is_ge(c, tc), Nat.is_ge(d, td))
+
+def consistent_lemma(x: Bool, co: Bool, dov: Bool) -> {Spec.is_consistent(Main.loops(x, co, dov)) == Bool.and(Bool.not(Spec.fires(x, co)), Bool.not(dov)) : Bool}:
+  match x co dov:
+    case True{} True{} True{}:
+      {==}
+    case True{} True{} False{}:
+      {==}
+    case True{} False{} True{}:
+      {==}
+    case True{} False{} False{}:
+      {==}
+    case False{} True{} True{}:
+      {==}
+    case False{} True{} False{}:
+      {==}
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      {==}
+
+def Laws.consistent_iff(x, c, tc, d, td):
+  consistent_lemma(x, Nat.is_ge(c, tc), Nat.is_ge(d, td))
+
+def Laws.holds_iff_consistent(v):
+  match v:
+    case Main.Consistent{}:
+      {==}
+    case Main.FixableNodes{}:
+      {==}
+    case Main.LoopConflict{}:
+      {==}
+    case Main.Underdetermined{}:
+      {==}
+    case Main.Inconclusive{}:
+      {==}

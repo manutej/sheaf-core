@@ -36,9 +36,9 @@ classify certified bounded xonly c tc d td
   | not bounded = Underdetermined
   | otherwise = loops xonly (c >= tc) (d >= td)
 
-toReceipt :: Verdict -> Bool -> Receipt
-toReceipt _ False = Hole
-toReceipt v True = case v of
+toReceipt :: Bool -> Verdict -> Receipt
+toReceipt False _ = Hole
+toReceipt True v = case v of
   Consistent -> Holds
   FixableNodes -> Broken
   LoopConflict -> Broken
@@ -97,10 +97,10 @@ laws =
       [ show (c, tc, k, d, td) | c <- nats, tc <- nats, k <- nats, d <- nats, td <- nats
       , classify True True False c tc d td == Consistent
       , classify True True False c (tc + k) d td /= Consistent ])
-  , ("receipt_map_hole", [ show v | v <- verdicts, toReceipt v False /= Hole ])
+  , ("receipt_map_hole", [ show v | v <- verdicts, toReceipt False v /= Hole ])
   , ("receipt_map_uncertified",
       [ show (b, x, c, tc, d, td) | b <- bools, x <- bools, c <- nats, tc <- nats, d <- nats, td <- nats
-      , toReceipt (classify False b x c tc d td) True /= Blocked ])
+      , toReceipt True (classify False b x c tc d td) /= Blocked ])
   , ("join_assoc", [ show (a, b, c) | a <- receipts, b <- receipts, c <- receipts, join a (join b c) /= join (join a b) c ])
   , ("join_comm", [ show (a, b) | a <- receipts, b <- receipts, join a b /= join b a ])
   , ("join_idem", [ show a | a <- receipts, join a a /= a ])
@@ -115,6 +115,10 @@ laws =
   , ("fixable_iff_disc",
       [ show (x, c, tc, d, td) | x <- bools, c <- nats, tc <- nats, d <- nats, td <- nats
       , (classify True True x c tc d td == FixableNodes) /= (d >= td && not (not x && c >= tc)) ])
+  , ("consistent_iff",
+      [ show (x, c, tc, d, td) | x <- bools, c <- nats, tc <- nats, d <- nats, td <- nats
+      , (classify True True x c tc d td == Consistent) /= (not (not x && c >= tc) && not (d >= td)) ])
+  , ("holds_iff_consistent", [ show v | v <- verdicts, (toReceipt True v == Holds) /= (v == Consistent) ])
     -- the join is the max of the order HOLDS < BROKEN < BLOCKED < HOLE (S.join.monoid, stated directly)
   , ("join_is_max", [ show (a, b) | a <- receipts, b <- receipts, join a b /= max a b ])
   ]
@@ -137,7 +141,7 @@ table =
   , showV (classify True True False 3 3 0 1)
   , showV (classify True True False 2 3 5 5)
   , showV (classify True True False 2 3 4 5)
-  , showR (toReceipt LoopConflict False)
+  , showR (toReceipt False LoopConflict)
   , showR (join Broken Blocked)
   , showR (joinAll (Got Holds (Missing (Got Holds End))))
   ]
@@ -147,6 +151,7 @@ main = do
   args <- getArgs
   case args of
     ["table"] -> mapM_ putStrLn table
+    ["fulltable"] -> mapM_ putStrLn fullTable
     ["laws"] -> do
       failed <- newIORef False
       forM_ laws $ \(name, cex) ->
@@ -157,3 +162,13 @@ main = do
       bad <- readIORef failed
       when bad exitFailure
     _ -> putStrLn "usage: Laws.hs table|laws" >> exitFailure
+
+-- Bridge B, full domain (seat 2 S2-07): every classify input over Bool^3 x {0..6}^4, every toReceipt input, every
+-- join input. Must equal `cargo run --bin bridge-table -- full` byte for byte.
+fullTable :: [String]
+fullTable =
+  [ unwords [b c', b bo, b x, show c, show tc, show d, show td, showV (classify c' bo x c tc d td)]
+  | c' <- bools, bo <- bools, x <- bools, c <- nats, tc <- nats, d <- nats, td <- nats ]
+  ++ [ unwords ["receipt", b a, showV v, showR (toReceipt a v)] | a <- bools, v <- verdicts ]
+  ++ [ unwords ["join", showR p, showR q, showR (join p q)] | p <- receipts, q <- receipts ]
+  where b t = if t then "1" else "0"

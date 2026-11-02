@@ -1,0 +1,9 @@
+# Constructor-swap mutants (seat 2 S2-04 asked for these; cargo-mutants does not generate them).
+# Run 2026-11-02 on a scratch copy of sheaf-kit, `cargo test -- --skip golden` (golden tables OFF: only laws may kill).
+# Harness note: a first run reported every mutant SURVIVED because it read the empty unit-test binary's
+# "0 failed" line; the control mutant D exposed it. Counting failures across all test binaries fixed it.
+D  to_receipt(false, _) -> Blocked              KILLED by receipt_map_hole            (control)
+A  to_receipt(true, Consistent) -> Broken       KILLED by holds_iff_consistent        (survived every law in v0.1)
+B  nodes(false) -> Inconclusive                 KILLED by consistent_iff              (killed only by golden in v0.1)
+C  nodes(true) -> Consistent                    KILLED by consistent_iff, fixable_iff_disc
+E  classify(unbounded) -> Inconclusive          KILLED by undetermined

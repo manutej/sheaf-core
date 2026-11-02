@@ -55,8 +55,8 @@
   "edges_by_harmonic_energy": [],
   "energy_xLx": 20.0,
   "extension": {
-    "boundary_dofs": 8,
-    "boundary_nodes": 8,
+    "boundary_dofs": 12,
+    "boundary_nodes": 12,
     "converged": true,
     "energy": 1.454462294e-30,
     "h0_relative": 0,
@@ -120,6 +120,34 @@
       {
         "boundary": true,
         "id": "G7",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G8",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G9",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G10",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G11",
         "value": [
           1.0
         ]
@@ -277,9 +305,9 @@
   "h0": {
     "cut_consistent_with_zero_tol": true,
     "cut_margin_ratio": 31779939.1413,
-    "dim": 7,
+    "dim": 11,
     "found_zero_by_solver": 2,
-    "known_kernel_dim": 5,
+    "known_kernel_dim": 9,
     "largest_counted_zero": {
       "residual": 1.37872744787e-15,
       "value": 1.01963435117e-16
@@ -330,14 +358,14 @@
     }
   },
   "input": {
-    "components": 7,
-    "dim_C0": 29,
+    "components": 11,
+    "dim_C0": 33,
     "dim_C1": 29,
     "edges": 29,
     "has_w": false,
     "has_x": true,
-    "known_constant_components": 5,
-    "nodes": 29
+    "known_constant_components": 9,
+    "nodes": 33
   },
   "method": "exact",
   "nodes_by_abs_potential": [
@@ -468,7 +496,7 @@
       0.0,
       0.0,
       0.0,
-      1.01963435117e-16
+      0.0
     ],
     "L1_graph": {
       "kernel_dim": 7,
@@ -477,7 +505,7 @@
       "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
     },
     "converged": true,
-    "gap_k": 1.01963435117e-16,
+    "gap_k": 0.0,
     "inner_cg": null,
     "lambda_max_bound": 20.0,
     "method": "exact",

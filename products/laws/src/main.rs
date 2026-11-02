@@ -38,13 +38,13 @@ fn main() {
     }
     if std::env::args().nth(1).as_deref() == Some("lock") {
         // interface.lock skeleton: per stage, its signature and law ids. Proof hashes are filled by the Mac gate.
-        println!("{{\n  \"format\": \"sheaf-products/interface-lock-v0\",\n  \"stages\": {{");
+        println!("{{\n  \"format\": \"sheaf-products/interface-lock-v1\",\n  \"auto_approve\": \"refused while any proof or bridge hash is null\",\n  \"stages\": {{");
         for (i, op) in Op::ALL.iter().enumerate() {
             let (ins, out) = op.signature();
             let ids: Vec<String> = all.iter().filter(|l| matches!(l.scope, Scope::Stage(o) if o == *op) || matches!(l.scope, Scope::Product(_, o) if o == *op))
                 .map(|l| format!("\"{}\"", l.id)).collect();
-            println!("    \"{op:?}\": {{\"in\": {:?}, \"out\": \"{out:?}\", \"owner\": \"{:?}\", \"laws\": [{}], \"bend_proof_sha256\": null, \"haskell_props_sha256\": null}}{}",
-                ins.iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(), op.owner(), ids.join(", "), if i + 1 < Op::ALL.len() { "," } else { "" });
+            println!("    \"{op:?}\": {{\"in\": {:?}, \"out\": \"{out:?}\", \"owner\": \"{:?}\", \"laws\": [{}], \"type_fnv64\": \"{:016x}\", \"effect\": \"{}\", \"bend_proof_sha256\": null, \"haskell_props_sha256\": null, \"bridge_sha256\": null}}{}",
+                ins.iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(), op.owner(), ids.join(", "), fnv(&format!("{op:?}{ins:?}{out:?}")), op.effect(), if i + 1 < Op::ALL.len() { "," } else { "" });
         }
         println!("  }}\n}}");
         return;
@@ -69,7 +69,26 @@ fn main() {
     o.push_str("| L1 Stage / interface | Bend LAWS.bend (Formal leaves) | Haskell Laws.hs, same ids | one Rust module per stage | bridge tables A, A', B |\n");
     o.push_str("| L2 Atom | Bend PROOF.bend (+ --verdict) | Haskell, exhaustive small domain | Rust fn + same-id test | mutation L0 (Bend), L2 (cargo-mutants) |\n");
     o.push_str("| L3 Product | Bend instance of its parent atom | Haskell | per-product crate | product fixtures + differential vs core binary |\n");
-    o.push_str("\n## Holes found by deriving each global law from its parts\n\n");
-    for (h, why) in holes() { o.push_str(&format!("- **{h}.** {why}\n")); }
+    o.push_str("\n## Status: holes (open questions or known violations; they propagate to every law derived from them)\n\n| id | layer | law |\n|---|---|---|\n");
+    for l in all.iter().filter(|l| effective_status(&all, l.id) == Status::Hole) { o.push_str(&format!("| {} | {:?} | {} |\n", l.id, l.layer, l.statement)); }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let rd = |p: &str| std::fs::read_to_string(root.join(p)).unwrap_or_default();
+    let (lb, pb, hs, rs) = (rd("bend/LAWS.bend"), rd("bend/PROOF.bend"), rd("haskell/Laws.hs"), rd("kit/tests/laws.rs"));
+    o.push_str("\n## Formal leaves: backing at every layer (LAWS.bend law + PROOF.bend def + Haskell property + Rust test, same id)\n\n| id | backed | cites |\n|---|---|---|\n");
+    for l in all.iter().filter(|l| l.tier == Tier::Formal && l.derives_from.is_empty()) {
+        let (b, n) = formal_backing(l, &lb, &pb, &hs, &rs);
+        o.push_str(&format!("| {} | {} of {} | {} |\n", l.id, b, n, l.evidence.join(", ")));
+    }
+    o.push_str("\nA Formal leaf with backing below its cite count is a planned proof, not a proof. 'Proved' is said only after the Mac gate records ALL PROOFS CHECK and --verdict for it.\n");
+    o.push_str("\n## Spec capabilities (coverage fixture: src/capabilities.rs)\n\n| id | capability | spec | stages | laws |\n|---|---|---|---|---|\n");
+    for c in sheaf_laws::capabilities::capabilities() {
+        match c.cover {
+            sheaf_laws::capabilities::Cover::Laws(ops, ls) => o.push_str(&format!("| {} | {} | {} | {} | {} |\n", c.id, c.what, c.spec, ops.iter().map(|o| format!("{o:?}")).collect::<Vec<_>>().join(", "), ls.join(", "))),
+            sheaf_laws::capabilities::Cover::Deferred(why) => o.push_str(&format!("| {} | {} | {} | deferred | {} |\n", c.id, c.what, c.spec, why)),
+        }
+    }
     print!("{o}");
 }
+
+/// FNV-1a 64 of a stage's signature text: a cheap, dependency-free type fingerprint for interface.lock.
+fn fnv(s: &str) -> u64 { s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ b as u64).wrapping_mul(0x100000001b3)) }

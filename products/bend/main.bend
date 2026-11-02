@@ -63,7 +63,7 @@ type Receipt is Data:
   Hole{}
 
 # agree: the two oracles (core Hodge split, product Circulate) agree; disagreement is a HOLE, never averaged
-def to_receipt(v: Verdict, agree: Bool) -> Receipt:
+def to_receipt(agree: Bool, v: Verdict) -> Receipt:
   match agree:
     case False{}:
       Hole{}
@@ -174,6 +174,6 @@ def main() -> IO(Unit):
     IO.print(Verdict.show(classify(True{}, True{}, False{}, 3n, 3n, 0n, 1n)))
     IO.print(Verdict.show(classify(True{}, True{}, False{}, 2n, 3n, 5n, 5n)))
     IO.print(Verdict.show(classify(True{}, True{}, False{}, 2n, 3n, 4n, 5n)))
-    IO.print(Receipt.show(to_receipt(LoopConflict{}, False{})))
+    IO.print(Receipt.show(to_receipt(False{}, LoopConflict{})))
     IO.print(Receipt.show(join(Broken{}, Blocked{})))
     IO.print(Receipt.show(join_all(Got{Holds{}, Missing{Got{Holds{}, End{}}}})))

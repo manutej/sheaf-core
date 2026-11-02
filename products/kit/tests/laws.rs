@@ -28,8 +28,8 @@ const F: Cert = Cert { certified: false };
         assert_eq!(classify(T, ev(true, false, c, tc + k, d, td)), Verdict::Consistent)
     }) }
 }
-#[test] fn receipt_map_hole() { for v in V { assert_eq!(to_receipt(v, false), Hole) } }
-#[test] fn receipt_map_uncertified() { for b in B { for x in B { each6(|c, tc, d, td| assert_eq!(to_receipt(classify(F, ev(b, x, c, tc, d, td)), true), Blocked)) } } }
+#[test] fn receipt_map_hole() { for v in V { assert_eq!(to_receipt(false, v), Hole) } }
+#[test] fn receipt_map_uncertified() { for b in B { for x in B { each6(|c, tc, d, td| assert_eq!(to_receipt(true, classify(F, ev(b, x, c, tc, d, td))), Blocked)) } } }
 #[test] fn join_assoc() { for a in R { for b in R { for c in R { assert_eq!(join(a, join(b, c)), join(join(a, b), c)) } } } }
 #[test] fn join_comm() { for a in R { for b in R { assert_eq!(join(a, b), join(b, a)) } } }
 #[test] fn join_idem() { for a in R { assert_eq!(join(a, a), a) } }
@@ -53,4 +53,12 @@ const F: Cert = Cert { certified: false };
 }
 #[test] fn fixable_iff_disc() {
     for x in B { each6(|c, tc, d, td| assert_eq!(classify(T, ev(true, x, c, tc, d, td)) == Verdict::FixableNodes, d >= td && !(!x && c >= tc))) }
+}
+#[test] fn consistent_iff() {
+    for x in B { each6(|c, tc, d, td| assert_eq!(classify(T, ev(true, x, c, tc, d, td)) == Verdict::Consistent, !(!x && c >= tc) && !(d >= td))) }
+}
+#[test] fn holds_iff_consistent() { for v in V { assert_eq!(to_receipt(true, v) == Holds, v == Verdict::Consistent) } }
+#[test] fn full_table_matches_golden() {
+    let golden = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/bridge_full.golden")).unwrap();
+    assert_eq!(full_table().join("\n") + "\n", golden);
 }
