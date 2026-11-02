@@ -1,0 +1,1 @@
+src/bin/bridge_table.rs:1:13: replace main with ()

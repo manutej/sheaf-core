@@ -1,0 +1,12 @@
+[package]
+name = "sheaf-laws"
+version = "0.1.0"
+edition = "2021"
+description = "Typed law ontology for sheaf-products: operadic tree of stages, layered laws, tiers, derivations. Single source of truth for LAWS.md and interface.lock."
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "sheaf-laws"
+path = "src/main.rs"

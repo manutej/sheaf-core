@@ -1,0 +1,16 @@
+{
+  "format": "sheaf-products/interface-lock-v0",
+  "stages": {
+    "Encode": {"in": ["DomainGraph"], "out": "Spec", "owner": "Products", "laws": ["S.encode.valid", "S.encode.index", "S.encode.mode", "A.encode.endpoints", "A.encode.shapes", "P.memory.flag-iff-differs", "P.memory.claim-rule", "P.consensus.pairwise-for-loops"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Validate": {"in": ["Spec"], "out": "ValidSpec", "owner": "Core", "laws": ["S.validate.mirror"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Analyze": {"in": ["ValidSpec"], "out": "Report", "owner": "Core", "laws": ["S.analyze.complex", "S.analyze.hodge", "S.analyze.x-only-exact", "S.analyze.holonomy", "S.analyze.component-local", "S.analyze.determinism", "P.consensus.frame-holonomy"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Extend": {"in": ["ValidSpec", "Boundary"], "out": "Report", "owner": "Core", "laws": ["S.extend.pins", "S.extend.unique", "S.extend.minimal"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Certify": {"in": ["Report"], "out": "Cert", "owner": "Products", "laws": ["S.certify.wf"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Circulate": {"in": ["ValidSpec"], "out": "Circ", "owner": "Products", "laws": ["S.circulate.exact", "A.circulate.exact-zero", "A.circulate.linear", "A.circulate.basis-size", "P.memory.contradiction-parity", "P.recon.rate-loop"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Quantize": {"in": ["Report", "Circ", "Policy"], "out": "Evidence", "owner": "Products", "laws": ["S.quantize.only-crossing", "S.quantize.threshold", "S.quantize.floor", "S.quantize.nonfinite", "P.recon.minor-units"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Classify": {"in": ["Cert", "Evidence"], "out": "Verdict", "owner": "Products", "laws": ["S.classify.total", "A.classify.uncertified", "A.classify.undetermined", "A.classify.xonly", "A.classify.mono", "A.classify.circ-only", "A.classify.loop-iff", "A.classify.disc-iff", "P.recon.unit-slip-is-exact"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Attribute": {"in": ["Report", "DomainGraph", "Verdict"], "out": "Finding", "owner": "Products", "laws": ["S.attribute.projection", "A.attribute.loop-blame", "A.attribute.fixable", "A.attribute.fill", "A.attribute.x-only", "P.memory.writeback", "P.studio.traceable"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Receipt": {"in": ["Finding", "Cert"], "out": "Receipt", "owner": "Products", "laws": ["S.receipt.map", "S.receipt.binding", "S.receipt.tier"], "bend_proof_sha256": null, "haskell_props_sha256": null},
+    "Join": {"in": ["Receipt", "Receipt"], "out": "Receipt", "owner": "Products", "laws": ["S.join.monoid", "S.join.cover", "P.recon.per-key-join"], "bend_proof_sha256": null, "haskell_props_sha256": null}
+  }
+}

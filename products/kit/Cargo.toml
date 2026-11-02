@@ -1,0 +1,12 @@
+[package]
+name = "sheaf-kit"
+version = "0.1.0"
+edition = "2021"
+description = "Discrete verdict layer of sheaf-products (Classify, Receipt, Join). Conforms to products/bend (proved) and products/haskell (correlate) under the same law ids."
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "bridge-table"
+path = "src/bin/bridge_table.rs"

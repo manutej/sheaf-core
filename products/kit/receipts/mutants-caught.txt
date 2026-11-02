@@ -1,0 +1,12 @@
+src/lib.rs:57:8: delete ! in classify
+src/lib.rs:58:29: replace >= with < in classify
+src/lib.rs:58:50: replace >= with < in classify
+src/lib.rs:63:8: delete ! in to_receipt
+src/lib.rs:56:8: delete ! in classify
+src/lib.rs:96:9: replace Verdict::show -> &'static str with ""
+src/lib.rs:96:9: replace Verdict::show -> &'static str with "xyzzy"
+src/lib.rs:104:9: replace Receipt::show -> &'static str with ""
+src/lib.rs:104:9: replace Receipt::show -> &'static str with "xyzzy"
+src/lib.rs:110:5: replace bridge_table -> Vec<&'static str> with vec![]
+src/lib.rs:110:5: replace bridge_table -> Vec<&'static str> with vec![""]
+src/lib.rs:110:5: replace bridge_table -> Vec<&'static str> with vec!["xyzzy"]
