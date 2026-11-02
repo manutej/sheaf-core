@@ -1,0 +1,499 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [
+    {
+      "discord": 4.0,
+      "edge": 4,
+      "harmonic_energy": 1.13595970352e-28,
+      "harmonic_frac_of_total": 5.67979851759e-30,
+      "label": "contradicts",
+      "u": "v1.L5-cyclic_if_harmonic_share_material",
+      "v": "G4"
+    },
+    {
+      "discord": 4.0,
+      "edge": 5,
+      "harmonic_energy": 7.88860905221e-29,
+      "harmonic_frac_of_total": 3.94430452611e-30,
+      "label": "contradicts",
+      "u": "v1.L6-local_if_exact_share_material",
+      "v": "G4"
+    },
+    {
+      "discord": 4.0,
+      "edge": 6,
+      "harmonic_energy": 7.88860905221e-29,
+      "harmonic_frac_of_total": 3.94430452611e-30,
+      "label": "contradicts",
+      "u": "v1.L7-mixed_if_both_shares_material",
+      "v": "G4"
+    },
+    {
+      "discord": 4.0,
+      "edge": 10,
+      "harmonic_energy": 1.42488001006e-29,
+      "harmonic_frac_of_total": 7.12440005028e-31,
+      "label": "contradicts",
+      "u": "v1.verdict-share-threshold-5pct",
+      "v": "A.classify.circ-only"
+    },
+    {
+      "discord": 4.0,
+      "edge": 13,
+      "harmonic_energy": 0.0,
+      "harmonic_frac_of_total": 0.0,
+      "label": "contradicts",
+      "u": "v1.python-tool-layer",
+      "v": "G2"
+    }
+  ],
+  "edges_by_harmonic_energy": [],
+  "energy_xLx": 20.0,
+  "extension": {
+    "boundary_dofs": 8,
+    "boundary_nodes": 8,
+    "converged": true,
+    "energy": 1.454462294e-30,
+    "h0_relative": 0,
+    "iters": 0,
+    "method": "exact",
+    "note": "values = the minimum-norm minimiser of ||delta x||^2 with x_B fixed; if not unique it is determined only up to H0(X,B;F)",
+    "residual_rel": 1.24126707662e-17,
+    "route": "dense",
+    "unique": true,
+    "uniqueness_rule": "unique iff dim H0(X,B;F) = dim ker L_II = 0 (Hansen-Ghrist Prop 4.1); zero cut: per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "values": [
+      {
+        "boundary": true,
+        "id": "G0",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G1",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G2",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G3",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G4",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G5",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G6",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "G7",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L1-memory_encode_sound",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.encode.valid",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L2-identity_encode_sound",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L3-encode_preserves_edge_count",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.encode.index",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L4-consistent_when_energy_zero",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L5-cyclic_if_harmonic_share_material",
+        "value": [
+          -1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L6-local_if_exact_share_material",
+        "value": [
+          -1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L7-mixed_if_both_shares_material",
+        "value": [
+          -1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L8-flag_iff_status_differs",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "P.memory.flag-iff-differs",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L9-claim_flag_rule",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "P.memory.claim-rule",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.L10-equal_status_never_flags",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.verdict-share-threshold-5pct",
+        "value": [
+          -1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.classify.circ-only",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.null-p95-reported-not-gated",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.quantize.floor",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "v1.python-tool-layer",
+        "value": [
+          -1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.encode.shapes",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.classify.total",
+        "value": [
+          1.0
+        ]
+      }
+    ]
+  },
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": 31779939.1413,
+    "dim": 7,
+    "found_zero_by_solver": 2,
+    "known_kernel_dim": 5,
+    "largest_counted_zero": {
+      "residual": 1.37872744787e-15,
+      "value": 1.01963435117e-16
+    },
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": {
+      "residual": 1.23310084323e-15,
+      "value": 0.0635598782827
+    },
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 2e-9,
+    "zero_tol_min": 4e-10
+  },
+  "h1": {
+    "dim": 7,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 8.34890298145e-15,
+    "cg_iters": 18,
+    "cochain": "delta x (derived from node data; exact by construction, A9)",
+    "converged": true,
+    "exact_share": 1.0,
+    "harmonic_share": 1.64740965955e-29,
+    "method": "exact",
+    "norm2": 20.0,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.241379310345,
+      "frac_ge_observed": null,
+      "mean": null,
+      "p05": null,
+      "p95": null,
+      "reps": 0
+    },
+    "null_shuffled_values": {
+      "degenerate": true,
+      "frac_ge_observed": null,
+      "mean": null,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": null,
+      "p95": null,
+      "reps": 0
+    }
+  },
+  "input": {
+    "components": 7,
+    "dim_C0": 29,
+    "dim_C1": 29,
+    "edges": 29,
+    "has_w": false,
+    "has_x": true,
+    "known_constant_components": 5,
+    "nodes": 29
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [
+    {
+      "abs_potential": 1.52941176471,
+      "node": "v1.L5-cyclic_if_harmonic_share_material"
+    },
+    {
+      "abs_potential": 1.52941176471,
+      "node": "v1.L6-local_if_exact_share_material"
+    },
+    {
+      "abs_potential": 1.52941176471,
+      "node": "v1.L7-mixed_if_both_shares_material"
+    },
+    {
+      "abs_potential": 1.52941176471,
+      "node": "v1.verdict-share-threshold-5pct"
+    },
+    {
+      "abs_potential": 1.5,
+      "node": "v1.python-tool-layer"
+    },
+    {
+      "abs_potential": 0.5,
+      "node": "S.encode.index"
+    },
+    {
+      "abs_potential": 0.5,
+      "node": "v1.L3-encode_preserves_edge_count"
+    },
+    {
+      "abs_potential": 0.5,
+      "node": "G2"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "G4"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "S.classify.total"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "P.memory.claim-rule"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "v1.L1-memory_encode_sound"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "v1.L2-identity_encode_sound"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "v1.L8-flag_iff_status_differs"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "G1"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "v1.L9-claim_flag_rule"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "v1.L10-equal_status_never_flags"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "A.encode.shapes"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "S.encode.valid"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "P.memory.flag-iff-differs"
+    },
+    {
+      "abs_potential": 0.470588235294,
+      "node": "A.classify.circ-only"
+    }
+  ],
+  "nodes_by_incident_discord": [
+    {
+      "incident_discord": 12.0,
+      "node": "G4"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "G2"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "v1.L5-cyclic_if_harmonic_share_material"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "v1.L6-local_if_exact_share_material"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "v1.L7-mixed_if_both_shares_material"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "v1.verdict-share-threshold-5pct"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "A.classify.circ-only"
+    },
+    {
+      "incident_discord": 4.0,
+      "node": "v1.python-tool-layer"
+    }
+  ],
+  "spectral": {
+    "L0_smallest": [
+      -1.0467631126e-16,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.01963435117e-16
+    ],
+    "L1_graph": {
+      "kernel_dim": 7,
+      "mapped_pairs_checked": 7,
+      "max_mapped_residual": 1.3452842148e-14,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": 1.01963435117e-16,
+    "inner_cg": null,
+    "lambda_max_bound": 20.0,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      3.01787699924e-16,
+      1.37872744787e-15,
+      1.23310084323e-15,
+      1.6927745981e-15,
+      1.28783094895e-15,
+      1.72948363634e-15,
+      8.63996786131e-16,
+      4.75139461717e-15,
+      1.09547735354e-15
+    ],
+    "spectral_gap": 0.0635598782827
+  }
+}

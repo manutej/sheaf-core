@@ -18,6 +18,24 @@ fn tree(all: &[Law], id: &str, indent: usize, out: &mut String) {
 
 fn main() {
     let all = laws();
+    if std::env::args().nth(1).as_deref() == Some("selfsheaf") {
+        let dir = std::env::args().nth(2).expect("selfsheaf <out-dir>");
+        std::fs::create_dir_all(&dir).unwrap();
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let rust_tests = std::fs::read_to_string(root.join("../kit/tests/laws.rs")).unwrap();
+        let laws_bend = std::fs::read_to_string(root.join("../bend/LAWS.bend")).unwrap();
+        let g = sheaf_laws::selfsheaf::coverage();
+        let pins: Vec<(String, f64)> = all.iter().filter(|l| sheaf_laws::selfsheaf::is_leaf(&all, l))
+            .map(|l| (l.id.to_string(), sheaf_laws::selfsheaf::evidence_level(l, &rust_tests, &laws_bend))).collect();
+        std::fs::write(format!("{dir}/coverage.spec.json"), g.spec_json(None)).unwrap();
+        std::fs::write(format!("{dir}/coverage.boundary.json"), sheaf_laws::selfsheaf::boundary_json(&pins)).unwrap();
+        let (c, cp) = sheaf_laws::selfsheaf::contradiction();
+        let adopted = |n: &str| if n.starts_with("v1.") { 1.0 } else { 1.0 };
+        std::fs::write(format!("{dir}/contradiction.spec.json"), c.spec_json(Some(&adopted))).unwrap();
+        std::fs::write(format!("{dir}/contradiction.boundary.json"), sheaf_laws::selfsheaf::boundary_json(&cp)).unwrap();
+        eprintln!("coverage: {} nodes, {} edges, {} leaf pins; contradiction: {} nodes, {} edges", g.nodes.len(), g.edges.len(), pins.len(), c.nodes.len(), c.edges.len());
+        return;
+    }
     if std::env::args().nth(1).as_deref() == Some("lock") {
         // interface.lock skeleton: per stage, its signature and law ids. Proof hashes are filled by the Mac gate.
         println!("{{\n  \"format\": \"sheaf-products/interface-lock-v0\",\n  \"stages\": {{");

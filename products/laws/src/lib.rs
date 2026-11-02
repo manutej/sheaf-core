@@ -13,6 +13,7 @@
 //! Tiers follow the Touchstone oracle ladder; "proved" is only ever said of `Formal`.
 
 pub mod wiring;
+pub mod selfsheaf;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Layer { Global = 0, Stage = 1, Atom = 2, Product = 3 }

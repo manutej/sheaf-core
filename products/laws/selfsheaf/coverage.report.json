@@ -1,0 +1,771 @@
+{
+  "assumptions": [
+    "A1-A8 of docs/rust-cohomology-design.md",
+    "A9 w := delta x when only x is given (harmonic share 0 by construction)",
+    "A10 v1 is graph-only (no 2-cells): no coexact part",
+    "A11 potential = minimum-norm solution of L0 x = d0^T w (orthogonal to H0); it is in node-stalk units, so with raw-unit stalks and scaling maps prefer nodes_by_incident_discord"
+  ],
+  "edges_by_discord": [],
+  "edges_by_harmonic_energy": [],
+  "energy_xLx": 0.0,
+  "extension": {
+    "boundary_dofs": 43,
+    "boundary_nodes": 43,
+    "converged": true,
+    "energy": 10.1988268697,
+    "h0_relative": 0,
+    "iters": 0,
+    "method": "exact",
+    "note": "values = the minimum-norm minimiser of ||delta x||^2 with x_B fixed; if not unique it is determined only up to H0(X,B;F)",
+    "residual_rel": 5.90729484827e-17,
+    "route": "dense",
+    "unique": true,
+    "uniqueness_rule": "unique iff dim H0(X,B;F) = dim ker L_II = 0 (Hansen-Ghrist Prop 4.1); zero cut: per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "values": [
+      {
+        "boundary": false,
+        "id": "ROOT",
+        "value": [
+          0.320665338216
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Encode",
+        "value": [
+          0.0549795751007
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:DomainGraph",
+        "value": [
+          0.0712666912727
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Spec",
+        "value": [
+          0.103407522732
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Validate",
+        "value": [
+          0.151835470363
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:ValidSpec",
+        "value": [
+          0.377721220465
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Analyze",
+        "value": [
+          0.699639202699
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Report",
+        "value": [
+          0.323910221687
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Extend",
+        "value": [
+          0.54032628843
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Boundary",
+        "value": [
+          0.54032628843
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Certify",
+        "value": [
+          0.174937765071
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Cert",
+        "value": [
+          0.241020462301
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Circulate",
+        "value": [
+          0.119083920368
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Circ",
+        "value": [
+          0.118088982579
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Quantize",
+        "value": [
+          0.11709404479
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Policy",
+        "value": [
+          0.11709404479
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Evidence",
+        "value": [
+          0.230379640687
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Classify",
+        "value": [
+          0.343665236585
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Verdict",
+        "value": [
+          0.215609522015
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Attribute",
+        "value": [
+          0.0875538074446
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Finding",
+        "value": [
+          0.146006096346
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Receipt",
+        "value": [
+          0.204458385248
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "color:Receipt",
+        "value": [
+          0.261902372532
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "op:Join",
+        "value": [
+          0.281050368293
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G0",
+        "value": [
+          0.106888446072
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.analyze.pin",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G1",
+        "value": [
+          0.337106869535
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.certify.wf",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.uncertified",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.receipt.map",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.analyze.certify",
+        "value": [
+          0.309758141368
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G2",
+        "value": [
+          0.0453327582083
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.attribute.projection",
+        "value": [
+          0.0201814752349
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.quantize.only-crossing",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G3",
+        "value": [
+          0.544252086076
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.join.monoid",
+        "value": [
+          0.400595092162
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.determinism",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G4",
+        "value": [
+          0.354285735801
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.circulate.exact-zero",
+        "value": [
+          0.117798724734
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.circulate.linear",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.classify.circ-only",
+        "value": [
+          0.322746839084
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G5",
+        "value": [
+          0.481731860746
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.quantize.floor",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.x-only-exact",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G6",
+        "value": [
+          0.58883650322
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.component-local",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.join.cover",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "G7",
+        "value": [
+          0.106888446072
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.receipt.tier",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.encode.valid",
+        "value": [
+          0.0871437762793
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.encode.endpoints",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.encode.shapes",
+        "value": [
+          0.0458534255319
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.encode.index",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.encode.mode",
+        "value": [
+          0.178903811949
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.circulate.exact",
+        "value": [
+          0.116711346117
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.circulate.basis-size",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.quantize.threshold",
+        "value": [
+          0.15712659353
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.quantize.nonfinite",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.classify.total",
+        "value": [
+          0.457891611518
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.undetermined",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.xonly",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.mono",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.loop-iff",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.classify.disc-iff",
+        "value": [
+          0.5
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.loop-blame",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.fixable",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "A.attribute.fill",
+        "value": [
+          0.0319791894786
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "A.attribute.x-only",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.receipt.binding",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.complex",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.analyze.hodge",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "S.analyze.holonomy",
+        "value": [
+          0.684641646167
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.validate.mirror",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.extend.pins",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.extend.unique",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "S.extend.minimal",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.encode.validate",
+        "value": [
+          0.126213138256
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.encode.attribute",
+        "value": [
+          0.0469665351884
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.circulate.analyze",
+        "value": [
+          0.341435009415
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "I.quantize.classify",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": false,
+        "id": "I.classify.receipt",
+        "value": [
+          0.282279765557
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.memory.flag-iff-differs",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.memory.claim-rule",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.memory.contradiction-parity",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.memory.writeback",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.recon.rate-loop",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.recon.unit-slip-is-exact",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.recon.minor-units",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.recon.per-key-join",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.consensus.pairwise-for-loops",
+        "value": [
+          0.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.consensus.frame-holonomy",
+        "value": [
+          1.0
+        ]
+      },
+      {
+        "boundary": true,
+        "id": "P.studio.traceable",
+        "value": [
+          0.0
+        ]
+      }
+    ]
+  },
+  "format": "frontier-sheaf/report-v1",
+  "h0": {
+    "cut_consistent_with_zero_tol": true,
+    "cut_margin_ratio": 98039678.5141,
+    "dim": 1,
+    "found_zero_by_solver": 0,
+    "known_kernel_dim": 1,
+    "largest_counted_zero": null,
+    "lower_bound_only": false,
+    "method": "exact",
+    "near_zero_ambiguous": false,
+    "smallest_counted_nonzero": {
+      "residual": 2.48070178493e-14,
+      "value": 0.313726971245
+    },
+    "wording": "certified residual: each eigenvalue lies within +-residual of a true eigenvalue (Weyl). The zero/nonzero labelling is a numerical policy (zero_rule), not a geometric kernel certificate; completeness of the Krylov search (no missed eigenvalue below the cut) is NOT certified; known-kernel dims are exact by construction.",
+    "zero_policy": "per_component_eig",
+    "zero_rule": "per component c: lambda <= 1e-10 * max(1, ||L0|_c||_bound) (ADR-012/ADR-015)",
+    "zero_tol": 3.2e-9,
+    "zero_tol_min": 3.2e-9
+  },
+  "h1": {
+    "dim": 116,
+    "method": "exact",
+    "rule": "rank-nullity on a graph: dim C1 - (dim C0 - h0); inherits the h0 cut"
+  },
+  "hodge": {
+    "cert_coclosed": 0.0,
+    "cg_iters": 0,
+    "cochain": "delta x (derived from node data; exact by construction, A9)",
+    "converged": true,
+    "exact_share": 0.0,
+    "harmonic_share": 0.0,
+    "method": "exact",
+    "norm2": 0.0,
+    "null_random_gaussian": {
+      "analytic_expectation_h1_over_dimC1": 0.56038647343,
+      "frac_ge_observed": null,
+      "mean": null,
+      "p05": null,
+      "p95": null,
+      "reps": 0
+    },
+    "null_shuffled_values": {
+      "degenerate": true,
+      "frac_ge_observed": null,
+      "mean": null,
+      "note": "degenerate = every shuffle gives the observed share (e.g. <2 edges per stalk-dim bucket, or a single cycle where shuffling preserves the loop sum): uninformative, not 'not significant'",
+      "p05": null,
+      "p95": null,
+      "reps": 0
+    }
+  },
+  "input": {
+    "components": 1,
+    "dim_C0": 92,
+    "dim_C1": 207,
+    "edges": 207,
+    "has_w": false,
+    "has_x": true,
+    "known_constant_components": 1,
+    "nodes": 92
+  },
+  "method": "exact",
+  "nodes_by_abs_potential": [],
+  "nodes_by_incident_discord": [],
+  "spectral": {
+    "L0_smallest": [
+      0.0,
+      0.313726971245,
+      0.329043797384,
+      0.40888548834,
+      0.4873683048,
+      0.594455072546,
+      0.731410505845
+    ],
+    "L1_graph": {
+      "kernel_dim": 116,
+      "mapped_pairs_checked": 7,
+      "max_mapped_residual": 1.29304649808e-13,
+      "nonzero_spectrum": "equals L0 nonzero spectrum (d0^T d0 vs d0 d0^T)"
+    },
+    "converged": true,
+    "gap_k": 0.136955433299,
+    "inner_cg": null,
+    "lambda_max_bound": 32.0,
+    "method": "exact",
+    "rounds": 1,
+    "solver": "dense-evd",
+    "solver_pairs_residuals": [
+      2.48070178493e-14,
+      1.89848446954e-14,
+      2.01863817716e-14,
+      2.33499865404e-14,
+      1.49825960175e-14,
+      1.01316158105e-14,
+      1.63676779557e-14
+    ],
+    "spectral_gap": 0.313726971245
+  }
+}
