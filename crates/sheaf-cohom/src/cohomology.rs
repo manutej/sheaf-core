@@ -78,7 +78,7 @@ impl CochainComplex {
         }
         let mut label = vec![usize::MAX; nv]; let mut n_comp = 0;
         let root: Vec<usize> = (0..nv).map(|v| find(&mut parent, v)).collect();
-        for v in 0..nv { let r = root[v]; if label[r] == usize::MAX { label[r] = n_comp; n_comp += 1; } }
+        for &r in &root { if label[r] == usize::MAX { label[r] = n_comp; n_comp += 1; } }
         let vcomp: Vec<usize> = (0..nv).map(|v| label[root[v]]).collect();
         let c0_comp: Vec<usize> = (0..nv).flat_map(|v| std::iter::repeat(vcomp[v]).take(s.stalk[0][v])).collect();
         // an edge with no incidences cannot occur in a validated complex; fall back to component 0
