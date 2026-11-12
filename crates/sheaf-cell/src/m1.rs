@@ -108,14 +108,14 @@ pub fn laplacian(d: &Csr) -> Csr {
 /// discord(e) = ‖(δx)_e‖², edge e owning `de[e]` consecutive rows. Caller checks Σde = rows and len(x) = cols.
 pub fn edge_discord(d: &Csr, x: &[f64], de: &[usize]) -> Vec<f64> {
     let r = d.mul(x); let mut out = Vec::with_capacity(de.len()); let mut row = 0;
-    for &k in de { let mut s = 0.0; for i in row..row + k { s += r[i] * r[i]; } out.push(s); row += k; }
+    for &k in de { let mut s = 0.0; for &v in &r[row..row + k] { s += v * v; } out.push(s); row += k; }
     out
 }
 /// Dense row-major variant (an m1 caller may hand a dense δ).
 pub fn edge_discord_dense(a: &[f64], nrows: usize, ncols: usize, x: &[f64], de: &[usize]) -> Vec<f64> {
     let r: Vec<f64> = (0..nrows).map(|i| a[i * ncols..(i + 1) * ncols].iter().zip(x).map(|(p, q)| p * q).sum()).collect();
     let mut out = Vec::with_capacity(de.len()); let mut row = 0;
-    for &k in de { let mut s = 0.0; for i in row..row + k { s += r[i] * r[i]; } out.push(s); row += k; }
+    for &k in de { let mut s = 0.0; for &v in &r[row..row + k] { s += v * v; } out.push(s); row += k; }
     out
 }
 
