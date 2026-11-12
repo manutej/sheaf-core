@@ -47,7 +47,25 @@ fn cg_from_zero_is_minimum_norm_on_a_singular_system() {
     assert!(!out.breakdown && out.residual_norm <= 1e-12 * norm(&b));
     assert!(out.x.iter().sum::<f64>().abs() < 1e-10, "min-norm solution is orthogonal to the constants");
     let mean = xt.iter().sum::<f64>() / n as f64;
-    for i in 0..n { assert!((out.x[i] - (xt[i] - mean)).abs() < 1e-9); }
+    for (i, &xti) in xt.iter().enumerate() { assert!((out.x[i] - (xti - mean)).abs() < 1e-9); }
+}
+
+proptest::proptest! {
+    /// Constant sheaf on the path P_n (L0 singular, kernel = constants): for every node vector xt, CG from zero on
+    /// L0 x = L0 xt does not break down and returns the minimum-norm solution xt − mean(xt), on every node.
+    #[test]
+    fn cg_from_zero_recovers_the_mean_free_part_on_a_path(xt in proptest::collection::vec(-1.0f64..1.0, 2..=10)) {
+        let n = xt.len(); let t: Vec<_> = (0..n - 1).map(|i| (i, i + 1, Mat::<f64>::identity(1, 1), Mat::<f64>::identity(1, 1))).collect();
+        let s = Sheaf::from_graph(&vec![1; n], &t).unwrap();
+        let (r, c, tr) = s.coboundary_triplets(0); let d = Csr::from_triplets(r, c, tr);
+        let b = d.mul_t(&d.mul(&xt));
+        let ap = |v: &[f64]| d.mul_t(&d.mul(v));
+        let out = cg(&ap, &b, vec![0.0; n], norm(&b), 4.0, SolveTol::default());
+        proptest::prop_assert!(!out.breakdown);
+        proptest::prop_assert_eq!(out.x.len(), n);
+        let mean = xt.iter().sum::<f64>() / n as f64;
+        for (i, &xti) in xt.iter().enumerate() { proptest::prop_assert!((out.x[i] - (xti - mean)).abs() < 1e-9, "node {}", i); }
+    }
 }
 
 #[test]
