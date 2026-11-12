@@ -90,7 +90,7 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
     }
     // ADR-017 P-RES-01: admission BEFORE any allocation. A 120-byte spec with two nodes of dim 200000 and an edge with
     // omitted maps used to allocate a 200000x200000 identity (320 GB) and abort; dim 2^64-1 wrapped the offsets.
-    if dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)).map_or(true, |t| t > MAX_TOTAL_DIM) {
+    if dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)).is_none_or(|t| t > MAX_TOTAL_DIM) {
         return Err(SpecError::Field(format!("nodes: total stalk dimension exceeds {MAX_TOTAL_DIM}")));
     }
     let index: std::collections::HashMap<&str, usize> = ids.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
@@ -373,6 +373,64 @@ mod quant_prop {
                 let idx = (((oracle.len() - 1) as f64) * q).round() as usize;
                 prop_assert!(idx < oracle.len());
                 prop_assert_eq!(got.to_bits(), oracle[idx].to_bits());
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod total_dim_prop {
+    use super::{parse, SpecError, MAX_TOTAL_DIM};
+
+    /// Match form of the admission predicate before the `is_none_or` rewrite.
+    /// `None` (the checked sum overflowed) is the old `map_or(true, _)` default.
+    fn map_or_exceeds(dims: &[usize]) -> bool {
+        match dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)) {
+            None => true,
+            Some(t) => t > MAX_TOTAL_DIM,
+        }
+    }
+
+    /// Format-valid document that stops at the missing-edges check when the dim gate passes.
+    /// No edge maps and no cochain, so a refusal never allocates.
+    fn nodes_only(dims: &[usize]) -> String {
+        let nodes: Vec<String> = dims.iter().enumerate().map(|(i, d)| format!(r#"{{"id":"n{i}","dim":{d}}}"#)).collect();
+        format!(r#"{{"format":"frontier-sheaf/v1","nodes":[{}]}}"#, nodes.join(","))
+    }
+
+    /// Boundary alphabet: under the cap, on the cap, just over it, and sums that overflow `usize`.
+    fn alphabet() -> [usize; 7] {
+        [0, 1, 2, MAX_TOTAL_DIM, MAX_TOTAL_DIM + 1, usize::MAX / 2, usize::MAX]
+    }
+
+    /// ∀ sequences of length ≤ 3 with entries in `alphabet`:
+    /// `parse` returns the total-stalk field error exactly when
+    /// `try_fold(checked_add).map_or(true, |t| t > MAX_TOTAL_DIM)` is true.
+    /// Otherwise the same document stops at `edges: missing list`.
+    #[test]
+    fn parse_total_dim_matches_map_or() {
+        let alpha = alphabet();
+        let mut seqs = vec![Vec::new()];
+        for &a in &alpha {
+            seqs.push(vec![a]);
+            for &b in &alpha {
+                seqs.push(vec![a, b]);
+                for &c in &alpha {
+                    seqs.push(vec![a, b, c]);
+                }
+            }
+        }
+        assert_eq!(seqs.len(), 1 + 7 + 7 * 7 + 7 * 7 * 7);
+        for dims in seqs {
+            let exceed = map_or_exceeds(&dims);
+            let err = match parse(&nodes_only(&dims)) {
+                Err(SpecError::Field(s)) => s,
+                other => panic!("dims {dims:?}: expected a field error, got {other:?}"),
+            };
+            if exceed {
+                assert!(err.contains("total stalk dimension"), "dims {dims:?}: {err}");
+            } else {
+                assert_eq!(err, "edges: missing list", "dims {dims:?}");
             }
         }
     }
