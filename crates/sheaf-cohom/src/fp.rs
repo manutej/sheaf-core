@@ -37,10 +37,19 @@ pub fn is_prime(p: i64) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FpError { NotPrime(i64), NotIntegral }
+pub enum FpError {
+    NotPrime(i64),
+    NotIntegral,
+    /// rank(δ_{k-1}) + rank(δ_k) > dim C^k. Same contract as `CohomError::RankConflict`: never wrap the usize difference.
+    RankConflict { k: usize, n: usize, rank_in: usize, rank_out: usize },
+}
 impl std::fmt::Display for FpError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self { FpError::NotPrime(p) => write!(f, "F_p rank needs a prime p >= 2, got {p}"), FpError::NotIntegral => write!(f, "coboundary has a non-integer, non-finite or |x| > 2^53 entry") }
+        match self {
+            FpError::NotPrime(p) => write!(f, "F_p rank needs a prime p >= 2, got {p}"),
+            FpError::NotIntegral => write!(f, "coboundary has a non-integer, non-finite or |x| > 2^53 entry"),
+            FpError::RankConflict { k, n, rank_in, rank_out } => write!(f, "F_p Betti degree {k}: rank in {rank_in} + rank out {rank_out} exceeds dim {n}"),
+        }
     }
 }
 
@@ -65,20 +74,27 @@ pub fn rank_mod_p(m: &[Vec<i64>], ncols: usize, p: i64) -> usize {
     rank
 }
 
-/// Betti numbers over F_p for a complex whose coboundaries are integral. None if not integral OR p is not prime
-/// (use `betti_mod_p_checked` for the reason).
+/// Betti numbers over F_p for a complex whose coboundaries are integral. None if not integral, p is not prime,
+/// or some degree has rank(δ_{k-1}) + rank(δ_k) > dim C^k (use `betti_mod_p_checked` for the reason).
 pub fn betti_mod_p(delta: &[Mat<f64>], dims: &[usize], p: i64) -> Option<Vec<usize>> { betti_mod_p_checked(delta, dims, p).ok() }
 
 /// Betti numbers over F_p with a typed error: p must be prime (any prime up to i64::MAX; products are i128).
+/// A missing differential (no matrix into or out of that degree) has rank 0. The difference is computed with
+/// `checked_sub`, so a pair of ranks that does not fit in the degree is `FpError::RankConflict` rather than a wrapped `usize`.
 pub fn betti_mod_p_checked(delta: &[Mat<f64>], dims: &[usize], p: i64) -> Result<Vec<usize>, FpError> {
     if !is_prime(p) { return Err(FpError::NotPrime(p)); }
     let mut ranks = Vec::new();
     for d in delta { let m = to_int(d).ok_or(FpError::NotIntegral)?; ranks.push(rank_mod_p(&m, d.ncols(), p)); }
-    Ok((0..dims.len()).map(|k| {
-        let rin = if k == 0 { 0 } else { ranks[k - 1] };
-        let rout = if k < ranks.len() { ranks[k] } else { 0 };
-        dims[k] - rin - rout
-    }).collect())
+    let mut betti = Vec::with_capacity(dims.len());
+    for (k, &n) in dims.iter().enumerate() {
+        // A missing differential has rank 0. `ranks[k - 1]` panicked when `dims` outran `delta`.
+        let rin = if k > 0 { ranks.get(k - 1).copied().unwrap_or(0) } else { 0 };
+        let rout = ranks.get(k).copied().unwrap_or(0);
+        let used = rin.checked_add(rout).ok_or(FpError::RankConflict { k, n, rank_in: rin, rank_out: rout })?;
+        let dim = n.checked_sub(used).ok_or(FpError::RankConflict { k, n, rank_in: rin, rank_out: rout })?;
+        betti.push(dim);
+    }
+    Ok(betti)
 }
 
 /// Typed wrapper: Betti numbers in exact F_p arithmetic (`ExactFp`, never confused with the f64 results).

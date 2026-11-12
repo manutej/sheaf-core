@@ -473,3 +473,103 @@ proptest! {
         }}
     }
 }
+
+/// Rank-nullity in i64. A differential that is not in `ranks` (no matrix into or out of that degree) contributes rank 0.
+/// `None` when some degree would be negative — the value `usize` subtraction would wrap.
+fn betti_i64(ranks: &[usize], dims: &[usize]) -> Option<Vec<usize>> {
+    let mut out = Vec::with_capacity(dims.len());
+    for (k, &n) in dims.iter().enumerate() {
+        let rin = if k == 0 { 0i64 } else { ranks.get(k - 1).copied().unwrap_or(0) as i64 };
+        let rout = ranks.get(k).copied().unwrap_or(0) as i64;
+        let dim = n as i64 - rin - rout;
+        if dim < 0 { return None; }
+        out.push(dim as usize);
+    }
+    Some(out)
+}
+
+fn arb_i64_mat() -> impl Strategy<Value = Mat<f64>> {
+    (0usize..=3, 0usize..=3).prop_flat_map(|(r, c)| {
+        prop::collection::vec(-8i64..9, r.saturating_mul(c)).prop_map(move |flat| {
+            Mat::from_fn(r, c, |i, j| flat[i * c + j] as f64)
+        })
+    })
+}
+
+fn arb_fp_chain() -> impl Strategy<Value = (i64, Vec<Mat<f64>>, Vec<usize>)> {
+    (arb_prime(), 0usize..=2).prop_flat_map(|(p, nmaps)| {
+        let dims_len = nmaps..=nmaps.saturating_add(2);
+        (prop::collection::vec(arb_i64_mat(), nmaps), dims_len).prop_flat_map(move |(ms, nd)| {
+            prop::collection::vec(0usize..=5, nd).prop_map(move |dims| (p, ms.clone(), dims))
+        })
+    })
+}
+
+/// δ¹ ∘ δ⁰ = 4, which is nonzero over F_5, so rank in + rank out = 2 > dim C¹ = 1.
+/// Previously `dims[k] - rin - rout` panicked in debug and wrapped in release.
+#[test]
+fn betti_mod_p_rank_conflict_is_not_a_wrapped_usize() {
+    let d = Mat::from_fn(1, 1, |_, _| 2.0);
+    let err = fp::betti_mod_p_checked(&[d.clone(), d], &[1, 1, 1], 5).unwrap_err();
+    assert_eq!(err, fp::FpError::RankConflict { k: 1, n: 1, rank_in: 1, rank_out: 1 });
+    assert!(fp::betti_mod_p(&[Mat::from_fn(1, 1, |_, _| 2.0), Mat::from_fn(1, 1, |_, _| 2.0)], &[1, 1, 1], 5).is_none());
+    // no differentials at all: both degrees are the whole cochain space (the incoming index used to panic)
+    assert_eq!(fp::betti_mod_p(&[], &[4, 5], 2), Some(vec![4, 5]));
+    // one differential, three degrees: the degree past the top has incoming rank and no outgoing rank
+    let id = Mat::from_fn(1, 1, |_, _| 1.0);
+    assert_eq!(fp::betti_mod_p(&[id], &[1, 1, 3], 5), Some(vec![0, 0, 3]));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(128))]
+    /// For every prime and every chain of small integer matrices, `betti_mod_p_checked` equals
+    /// rank-nullity in i64: β_k = dim C^k − rank(δ_{k−1}) − rank(δ_k), with a missing map counted
+    /// as rank 0. A negative degree is `RankConflict`, never a panic and never a wrapped usize.
+    #[test]
+    fn betti_mod_p_matches_i64_rank_nullity((p, delta, dims) in arb_fp_chain()) {
+        let ranks: Vec<usize> = delta.iter().map(|m| {
+            let rows = fp::to_int(m).expect("small integers");
+            fp::rank_mod_p(&rows, m.ncols(), p)
+        }).collect();
+        let oracle = betti_i64(&ranks, &dims);
+        let got = fp::betti_mod_p_checked(&delta, &dims, p);
+        match (oracle, got) {
+            (Some(expect), Ok(got)) => prop_assert_eq!(got, expect, "p={} dims={:?}", p, dims),
+            (None, Err(fp::FpError::RankConflict { .. })) => {}
+            (oracle, got) => prop_assert!(false, "p={} dims={:?} oracle={:?} got={:?}", p, dims, oracle, got),
+        }
+    }
+}
+
+fn n_components(s: &Sheaf) -> usize {
+    let labels = vertex_components(s);
+    labels.iter().copied().max().map(|m| m + 1).unwrap_or(0)
+}
+
+/// Path on 4 vertices, stalk R², and two disjoint edges. H⁰ over F_2 is one copy of the stalk per component.
+#[test]
+fn constant_sheaf_fp_h0_anchors() {
+    let path = Sheaf::constant(CellComplex::simplicial(4, &[(0, 1), (1, 2), (2, 3)], &[]), 2);
+    let cc = CochainComplex::from_sheaf(&path).unwrap();
+    assert_eq!(n_components(&path), 1);
+    assert_eq!(fp::betti_mod_p(&cc.delta, &cc.dims, 2).unwrap()[0], 2);
+    let split = Sheaf::constant(CellComplex::simplicial(4, &[(0, 1), (2, 3)], &[]), 1);
+    let cc = CochainComplex::from_sheaf(&split).unwrap();
+    assert_eq!(n_components(&split), 2);
+    assert_eq!(fp::betti_mod_p(&cc.delta, &cc.dims, 2).unwrap()[0], 2);
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+    /// Constant sheaf R^d: δ⁰ is the oriented incidence matrix of the 1-skeleton, once per stalk
+    /// coordinate. Over every prime, including 2 (where −1 = 1), dim H⁰ = d × (number of components).
+    #[test]
+    fn constant_sheaf_betti_mod_p_h0_is_component_stalks(cx in arb_complex(), d in 1usize..4, p in arb_prime()) {
+        let s = Sheaf::constant(cx, d);
+        let cc = CochainComplex::from_sheaf(&s).unwrap();
+        let b = fp::betti_mod_p(&cc.delta, &cc.dims, p).unwrap();
+        let want = n_components(&s) * d;
+        prop_assert_eq!(b.len(), cc.dims.len());
+        prop_assert_eq!(b[0], want, "p={} dims={:?} betti={:?}", p, cc.dims, b);
+    }
+}
