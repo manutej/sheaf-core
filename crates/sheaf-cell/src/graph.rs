@@ -28,7 +28,7 @@ pub fn coboundary(dims: &[usize], edges: &[GraphEdge]) -> (Csr, Vec<usize>, Vec<
 /// Connected components: (component of each node, known-constant flag per component, count). A component is
 /// "known constant" iff every edge has F_u == F_v and injective: then its constants are exact sections.
 pub fn components(n: usize, edges: &[GraphEdge]) -> (Vec<usize>, Vec<bool>, usize) {
-    fn find(p: &mut Vec<usize>, mut a: usize) -> usize { while p[a] != a { p[a] = p[p[a]]; a = p[a]; } a }
+    fn find(p: &mut [usize], mut a: usize) -> usize { while p[a] != a { p[a] = p[p[a]]; a = p[a]; } a }
     let mut p: Vec<usize> = (0..n).collect();
     for e in edges { let (a, b) = (find(&mut p, e.u), find(&mut p, e.v)); if a != b { p[a.max(b)] = a.min(b); } }
     let mut lab = vec![usize::MAX; n]; let mut nc = 0; let mut comp = vec![0; n];
