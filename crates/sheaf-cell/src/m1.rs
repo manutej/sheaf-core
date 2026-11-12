@@ -132,14 +132,14 @@ pub fn pattern_components(a: &Csr) -> Vec<(Vec<usize>, Vec<usize>)> {
     let n = a.ncols; let mut p: Vec<usize> = (0..n).collect();
     fn find(p: &mut [usize], mut x: usize) -> usize { while p[x] != x { p[x] = p[p[x]]; x = p[x]; } x }
     let mut row_rep = vec![usize::MAX; a.nrows];
-    for i in 0..a.nrows {
+    for (i, rep) in row_rep.iter_mut().enumerate() {
         let mut first = usize::MAX;
         for q in a.ptr[i]..a.ptr[i + 1] {
             if a.val[q] == 0.0 { continue; }
             let c = a.idx[q];
             if first == usize::MAX { first = c; } else { let (x, y) = (find(&mut p, first), find(&mut p, c)); if x != y { p[x.max(y)] = x.min(y); } }
         }
-        row_rep[i] = first;
+        *rep = first;
     }
     let mut lab = vec![usize::MAX; n]; let mut groups: Vec<(Vec<usize>, Vec<usize>)> = Vec::new();
     for c in 0..n { let r = find(&mut p, c); if lab[r] == usize::MAX { lab[r] = groups.len(); groups.push((vec![], vec![])); } groups[lab[r]].1.push(c); }
