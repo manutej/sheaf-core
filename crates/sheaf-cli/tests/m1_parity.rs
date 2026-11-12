@@ -9,6 +9,7 @@
 //!   H⁰ dims     : exact, both routes (SVD: H0Policy::m1_svd(1e-9); eigen: H0Policy::m1_eig(1e-10))
 //!   H⁰ basis    : projector |GGᵀ_rs − GGᵀ_py|max ≤ 1e-8; ‖GᵀG − I‖max ≤ 1e-8; ‖δG‖_F ≤ 1e-6 · max(1, σ_max)
 //!                 (bases are compared as subspaces: singular vectors are unique only up to rotation)
+use proptest::prelude::*;
 use serde_json::Value;
 use sheaf_cell::m1 as cell;
 use sheaf_cell::num::sparse::Csr;
@@ -24,7 +25,25 @@ fn f64s(v: &Value) -> Vec<f64> { v.as_array().unwrap().iter().map(|x| x.as_f64()
 fn mat(v: &Value) -> Vec<Vec<f64>> { v.as_array().unwrap().iter().map(f64s).collect() }
 fn dense(a: &Csr) -> Vec<Vec<f64>> {
     let mut d = vec![vec![0.0; a.ncols]; a.nrows];
-    for i in 0..a.nrows { for p in a.ptr[i]..a.ptr[i + 1] { d[i][a.idx[p]] += a.val[p]; } } d
+    for (i, row) in d.iter_mut().enumerate() { for p in a.ptr[i]..a.ptr[i + 1] { row[a.idx[p]] += a.val[p]; } } d
+}
+proptest! {
+    /// ∀ nrows, ncols in 1..=4, ∀ in-range triplets with values in {-3..=3} (duplicates allowed, sums exact in f64):
+    /// `dense(from_triplets(t))[r][c]` is the sum of the values `t` puts at (r, c), and column j is `a.mul(e_j)`.
+    #[test]
+    fn dense_sums_triplets_and_matches_mul(
+        (nrows, ncols, t) in (1usize..5, 1usize..5).prop_flat_map(|(r, c)| (Just(r), Just(c), proptest::collection::vec((0..r, 0..c, -3i8..=3), 0..12))),
+    ) {
+        let a = Csr::from_triplets(nrows, ncols, t.iter().map(|&(r, c, v)| (r, c, f64::from(v))).collect());
+        let mut want = vec![vec![0.0; ncols]; nrows];
+        for &(r, c, v) in &t { want[r][c] += f64::from(v); }
+        let got = dense(&a);
+        prop_assert_eq!(&got, &want);
+        for j in 0..ncols {
+            let mut e = vec![0.0; ncols]; e[j] = 1.0;
+            prop_assert_eq!(got.iter().map(|row| row[j]).collect::<Vec<f64>>(), a.mul(&e));
+        }
+    }
 }
 fn maxdiff(a: &[Vec<f64>], b: &[Vec<f64>]) -> f64 {
     assert_eq!(a.len(), b.len()); a.iter().zip(b).map(|(r, s)| { assert_eq!(r.len(), s.len()); r.iter().zip(s).map(|(x, y)| (x - y).abs()).fold(0.0, f64::max) }).fold(0.0, f64::max)
