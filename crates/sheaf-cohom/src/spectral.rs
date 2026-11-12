@@ -59,7 +59,7 @@ impl KnownKernel {
 
 #[derive(Debug)]
 struct Shifted<'a> { op: &'a HodgeOp, c: f64, known: &'a KnownKernel, locked: &'a [Vec<f64>] }
-impl<'a> Shifted<'a> {
+impl Shifted<'_> {
     fn proj(&self, x: &mut [f64]) {
         for _ in 0..2 { // twice: classical Gram-Schmidt re-orthogonalisation
             self.known.project(x);
@@ -67,7 +67,7 @@ impl<'a> Shifted<'a> {
         }
     }
 }
-impl<'a> LinOp<f64> for Shifted<'a> {
+impl LinOp<f64> for Shifted<'_> {
     fn apply_scratch(&self, _rhs_ncols: usize, _par: Par) -> StackReq { StackReq::EMPTY }
     fn nrows(&self) -> usize { self.op.n }
     fn ncols(&self) -> usize { self.op.n }
@@ -90,7 +90,7 @@ impl<'a> LinOp<f64> for Shifted<'a> {
 #[derive(Debug)]
 struct ShiftInvert<'a> { op: &'a HodgeOp, sigma: f64, diag_inv: &'a [f64], known: &'a KnownKernel, locked: &'a [Vec<f64>], inner_rtol: f64, inner_max: usize,
     stats: std::sync::Mutex<(usize, usize, f64)> /* (solves, total iters, worst rel residual) */ }
-impl<'a> ShiftInvert<'a> {
+impl ShiftInvert<'_> {
     fn proj(&self, x: &mut [f64]) {
         for _ in 0..2 { self.known.project(x); for q in self.locked { let a = dot(q, x); x.iter_mut().zip(q).for_each(|(v, b)| *v -= a * b); } }
     }
@@ -113,7 +113,7 @@ impl<'a> ShiftInvert<'a> {
         x
     }
 }
-impl<'a> LinOp<f64> for ShiftInvert<'a> {
+impl LinOp<f64> for ShiftInvert<'_> {
     fn apply_scratch(&self, _rhs_ncols: usize, _par: Par) -> StackReq { StackReq::EMPTY }
     fn nrows(&self) -> usize { self.op.n }
     fn ncols(&self) -> usize { self.op.n }
