@@ -37,8 +37,11 @@ pub struct M1Math {
     pub policy_eig: String,
 }
 
+/// One m1 edge with owned row-major maps: (u, v, de, fu, fv).
+pub type RawM1Edge = (usize, usize, usize, Vec<f64>, Vec<f64>);
+
 /// Row-major flat maps per m1 edge: (dv, [(u, v, de, fu, fv)]).
-pub fn to_m1_edges(s: &SheafSpec) -> (Vec<usize>, Vec<(usize, usize, usize, Vec<f64>, Vec<f64>)>) {
+pub fn to_m1_edges(s: &SheafSpec) -> (Vec<usize>, Vec<RawM1Edge>) {
     let e = s.edges.iter().map(|e| { let (fu, fv) = &s.maps[&e.ty];
         (e.u, e.v, fu.len(), fu.iter().flatten().copied().collect(), fv.iter().flatten().copied().collect()) }).collect();
     (vec![s.d; s.nodes.len()], e)

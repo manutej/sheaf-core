@@ -50,7 +50,7 @@ fn m1_parity_random_and_edge_cases() {
     for c in cases {
         let name = c["name"].as_str().unwrap();
         let dv: Vec<usize> = c["dv"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as usize).collect();
-        let raw: Vec<(usize, usize, usize, Vec<f64>, Vec<f64>)> = c["edges"].as_array().unwrap().iter().map(|e|
+        let raw: Vec<sheaf_cli::m1::RawM1Edge> = c["edges"].as_array().unwrap().iter().map(|e|
             (e["u"].as_u64().unwrap() as usize, e["v"].as_u64().unwrap() as usize, e["de"].as_u64().unwrap() as usize, f64s(&e["fu"]), f64s(&e["fv"]))).collect();
         let edges: Vec<cell::M1Edge> = raw.iter().map(|(u, v, de, fu, fv)| cell::M1Edge { u: *u, v: *v, de: *de, fu, fv }).collect();
         cell::check_edges(&dv, &edges).unwrap();
