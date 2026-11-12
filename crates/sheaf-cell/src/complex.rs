@@ -88,7 +88,8 @@ impl CellComplex {
         CellComplex { n_cells, inc, verts }
     }
 
-    /// Check indices and boundary-of-boundary = 0 (A3). Pure; returns typed error.
+    /// Check indices and boundary-of-boundary = 0 (A3). Pure and deterministic: on failure the witness is the
+    /// lexicographically least nonzero (facet, cocofacet) pair (BTreeMap order, not hash order).
     pub fn validate(&self) -> Result<(), ComplexError> {
         for (k, list) in self.inc.iter().enumerate() {
             for i in list {
@@ -97,8 +98,8 @@ impl CellComplex {
             }
         }
         for k in 0..self.inc.len().saturating_sub(1) {
-            use std::collections::HashMap;
-            let mut acc: HashMap<(usize, usize), i32> = HashMap::new();
+            use std::collections::BTreeMap;
+            let mut acc: BTreeMap<(usize, usize), i32> = BTreeMap::new();
             for a in &self.inc[k] {
                 for b in self.inc[k + 1].iter().filter(|b| b.facet == a.cofacet) {
                     *acc.entry((a.facet, b.cofacet)).or_default() += (a.sign as i32) * (b.sign as i32);

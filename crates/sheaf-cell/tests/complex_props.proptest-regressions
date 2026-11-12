@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ca090764692d68c3de2798320920426258ad247b3da5c238f7cf26d918798eaf # shrinks to (n, edges, faces) = (3, [(0, 1)], [[2, 0, 1], [2, 0, 1], [2, 0, 1]]), k = 1, pick = Index(3426519698204131858)
+cc 355270e94da27413fab7c1cccfccbc7cdbe748313c1c53dde2ac31dd3b7d3318 # shrinks to (n, edges, faces) = (5, [(1, 3), (1, 2), (0, 1)], [[4, 1, 2], [3, 0, 2], [3, 0, 2], [4, 2, 3], [3, 0, 1]]), k = 1, pick = Index(6247324002495819488)
+cc b5f920439c41757d9fdca26354b0d74ade930172b73123587dd060dfda74e36a # shrinks to (n, edges, faces) = (4, [], []), k = 0, pick = Index(0)

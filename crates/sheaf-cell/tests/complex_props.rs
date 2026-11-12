@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use faer::Mat;
 use proptest::prelude::*;
-use sheaf_cell::complex::CellComplex;
+use sheaf_cell::complex::{CellComplex, ComplexError};
 use sheaf_cell::sheaf::Sheaf;
 
 /// (n, edges, faces) on n in 3..7 vertices; every face has three distinct vertices, edges may repeat or be reversed.
@@ -62,5 +62,28 @@ proptest! {
             let v: f64 = (0..d0.nrows()).map(|m| d1[(i, m)] * d0[(m, j)]).sum();
             prop_assert_eq!(v, 0.0, "(d1 d0)[{}, {}] = {}", i, j, v);
         }}
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(128))]
+
+    /// Flipping ONE incidence sign of a valid simplicial complex: `validate` fails iff some (k-1, k+1) pair now sums
+    /// to ±2, and reports the lexicographically least such (facet, cocofacet). Flip [e:t] (e = [a, b], a < b) =>
+    /// witness (a, t). Flip [v:e] => Ok iff no triangle contains e, else witness (v, least triangle containing e).
+    #[test]
+    fn validate_reports_the_least_witness_of_a_flipped_sign((n, edges, faces) in arb_simplicial(), k in 0usize..2, pick in any::<prop::sample::Index>()) {
+        let mut cx = CellComplex::simplicial(n, &edges, &faces);
+        prop_assume!(cx.inc.get(k).is_some_and(|l| !l.is_empty()));
+        let i = pick.index(cx.inc[k].len());
+        cx.inc[k][i].sign = -cx.inc[k][i].sign;
+        let (facet, cofacet) = (cx.inc[k][i].facet, cx.inc[k][i].cofacet);
+        let expected = if k == 1 {
+            Err(ComplexError::BoundaryOfBoundaryNonzero { dim: 0, facet: cx.verts[1][facet][0], cocofacet: cofacet })
+        } else {
+            let tri = cx.inc.get(1).and_then(|l| l.iter().filter(|b| b.facet == cofacet).map(|b| b.cofacet).min());
+            tri.map_or(Ok(()), |t| Err(ComplexError::BoundaryOfBoundaryNonzero { dim: 0, facet, cocofacet: t }))
+        };
+        prop_assert_eq!(cx.validate(), expected);
     }
 }
