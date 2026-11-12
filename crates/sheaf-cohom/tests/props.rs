@@ -1,6 +1,7 @@
 use proptest::prelude::*;
 use sheaf_cell::{complex::CellComplex, num::linalg::*, sheaf::Sheaf};
 use sheaf_cohom::cohomology::*;
+use sheaf_cohom::fp;
 use faer::Mat;
 use faer::linalg::solvers::DenseSolveCore;
 
@@ -139,5 +140,132 @@ proptest! {
             let rejected = matches!(CochainComplex::from_sheaf(&s), Err(CohomError::NotAComplex { .. }));
             prop_assert!(rejected);
         }
+    }
+}
+
+/// Field product and difference modulo a positive prime, reduced after every operation.
+/// Independent of `fp::rank_mod_p` (no elimination, no Fermat inverse).
+fn mod_mul(x: i64, y: i64, p: i64) -> i64 { ((x as i128 * y as i128).rem_euclid(p as i128)) as i64 }
+fn mod_sub(x: i64, y: i64, p: i64) -> i64 { ((x as i128) - (y as i128)).rem_euclid(p as i128) as i64 }
+fn mod_add(x: i64, y: i64, p: i64) -> i64 { ((x as i128) + (y as i128)).rem_euclid(p as i128) as i64 }
+
+/// Largest k such that some k×k minor is nonzero in F_p. Entries are reduced with `rem_euclid` first.
+fn det_rank(m: &[Vec<i64>], ncols: usize, p: i64) -> usize {
+    debug_assert!(m.iter().all(|r| r.len() == ncols), "row length must equal ncols");
+    if m.is_empty() || ncols == 0 { return 0; }
+    let a: Vec<Vec<i64>> = m.iter().map(|r| r.iter().map(|x| x.rem_euclid(p)).collect()).collect();
+    let (n, c) = (a.len(), ncols);
+    for k in (1..=n.min(c)).rev() {
+        if minor_nonzero(&a, k, p) { return k; }
+    }
+    0
+}
+
+fn minor_nonzero(a: &[Vec<i64>], k: usize, p: i64) -> bool {
+    let (n, c) = (a.len(), a[0].len());
+    match k {
+        1 => a.iter().any(|row| row.iter().any(|&x| x != 0)),
+        2 => {
+            for i in 0..n { for i2 in (i + 1)..n {
+                for j in 0..c { for j2 in (j + 1)..c {
+                    let d = mod_sub(mod_mul(a[i][j], a[i2][j2], p), mod_mul(a[i][j2], a[i2][j], p), p);
+                    if d != 0 { return true; }
+                }}
+            }}
+            false
+        }
+        3 => {
+            for i in 0..n { for i2 in (i + 1)..n { for i3 in (i2 + 1)..n {
+                for j in 0..c { for j2 in (j + 1)..c { for j3 in (j2 + 1)..c {
+                    if det3(a, [i, i2, i3], [j, j2, j3], p) != 0 { return true; }
+                }}}
+            }}}
+            false
+        }
+        _ => false,
+    }
+}
+
+/// det of the 3×3 submatrix on these rows and columns, via cofactor expansion in F_p.
+fn det3(a: &[Vec<i64>], rs: [usize; 3], cs: [usize; 3], p: i64) -> i64 {
+    let g = |i: usize, j: usize| a[rs[i]][cs[j]];
+    let c0 = mod_sub(mod_mul(g(1, 1), g(2, 2), p), mod_mul(g(1, 2), g(2, 1), p), p);
+    let c1 = mod_sub(mod_mul(g(1, 0), g(2, 2), p), mod_mul(g(1, 2), g(2, 0), p), p);
+    let c2 = mod_sub(mod_mul(g(1, 0), g(2, 1), p), mod_mul(g(1, 1), g(2, 0), p), p);
+    let pos = mod_add(mod_mul(g(0, 0), c0, p), mod_mul(g(0, 2), c2, p), p);
+    mod_sub(pos, mod_mul(g(0, 1), c1, p), p)
+}
+
+fn for_each_matrix(rows: usize, cols: usize, p: i64, f: &mut impl FnMut(&[Vec<i64>])) {
+    let mut m = vec![vec![0i64; cols]; rows];
+    fn rec(m: &mut [Vec<i64>], p: i64, cell: usize, f: &mut impl FnMut(&[Vec<i64>])) {
+        let cols = m.first().map_or(0, |r| r.len());
+        let n = m.len() * cols;
+        if cell == n { f(m); return; }
+        let (i, j) = (cell / cols, cell % cols);
+        for v in 0..p { m[i][j] = v; rec(m, p, cell + 1, f); }
+    }
+    rec(&mut m, p, 0, f);
+}
+
+/// Every matrix over a tiny prime field, plus anchors whose rank is fixed by hand
+/// (not by the oracle): zero, identity, a scalar multiple of a row, and out-of-range residues.
+#[test]
+fn rank_mod_p_equals_determinantal_rank_on_small_fields() {
+    assert_eq!(fp::rank_mod_p(&[vec![0, 0], vec![0, 0]], 2, 5), 0);
+    assert_eq!(fp::rank_mod_p(&[vec![1, 0], vec![0, 1]], 2, 5), 2);
+    assert_eq!(fp::rank_mod_p(&[vec![1, 0, 0], vec![0, 1, 0], vec![0, 0, 1]], 3, 5), 3);
+    // row2 = 2·row1 over F_5, so the matrix is singular. A Fermat inverse that is not a true
+    // inverse reports rank 2 here (the pivot is not cleared).
+    assert_eq!(fp::rank_mod_p(&[vec![2, 1], vec![4, 2]], 2, 5), 1);
+    assert_eq!(det_rank(&[vec![2, 1], vec![4, 2]], 2, 5), 1);
+    assert_eq!(fp::rank_mod_p(&[vec![-1, 0], vec![0, -1]], 2, 5), 2);
+    assert_eq!(fp::rank_mod_p(&[vec![i64::MIN]], 1, 2), 0);
+    assert_eq!(fp::rank_mod_p(&[vec![i64::MAX]], 1, 2), 1);
+    for &p in &[2i64, 3, 5, 7, 11] {
+        for rows in 0..=2 { for cols in 0..=2 {
+            for_each_matrix(rows, cols, p, &mut |m| {
+                assert_eq!(fp::rank_mod_p(m, cols, p), det_rank(m, cols, p), "p={p} m={m:?}");
+            });
+        }}
+    }
+    for &p in &[2i64, 3] {
+        for rows in 0..=3 { for cols in 0..=3 {
+            if rows <= 2 && cols <= 2 { continue; }
+            for_each_matrix(rows, cols, p, &mut |m| {
+                assert_eq!(fp::rank_mod_p(m, cols, p), det_rank(m, cols, p), "p={p} m={m:?}");
+            });
+        }}
+    }
+}
+
+fn arb_prime() -> impl Strategy<Value = i64> {
+    prop::sample::select(vec![
+        2i64, 3, 5, 7, 11, 13, 17, 19, 31, 97, 251, 257, 65537,
+        2_147_483_647, 4_294_967_291, 9_223_372_036_854_775_783,
+    ])
+}
+
+fn arb_entry() -> impl Strategy<Value = i64> {
+    prop_oneof![6 => -40i64..41, 1 => Just(i64::MIN), 1 => Just(i64::MAX), 1 => Just(-1i64)]
+}
+
+fn arb_fp_matrix() -> impl Strategy<Value = (i64, Vec<Vec<i64>>, usize)> {
+    (arb_prime(), 0usize..=3, 0usize..=3).prop_flat_map(|(p, rows, cols)| {
+        prop::collection::vec(arb_entry(), rows * cols).prop_map(move |flat| {
+            let m = if cols == 0 { vec![Vec::new(); rows] } else { flat.chunks(cols).map(|row| row.to_vec()).collect() };
+            (p, m, cols)
+        })
+    })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(200))]
+    /// Same claim as the exhaustive test, for primes past the i64-product overflow line
+    /// and for residues outside 0..p (including i64::MIN / i64::MAX).
+    #[test]
+    fn rank_mod_p_equals_determinantal_rank(case in arb_fp_matrix()) {
+        let (p, m, cols) = case;
+        prop_assert_eq!(fp::rank_mod_p(&m, cols, p), det_rank(&m, cols, p), "p={} m={:?}", p, m);
     }
 }
