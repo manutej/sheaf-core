@@ -68,7 +68,7 @@ impl CochainComplex {
         // components of the 1-skeleton (union-find over vertices via the vertex->edge incidences)
         let nv = s.complex.n_cells[0];
         let mut parent: Vec<usize> = (0..nv).collect();
-        fn find(p: &mut Vec<usize>, mut x: usize) -> usize { while p[x] != x { p[x] = p[p[x]]; x = p[x]; } x }
+        fn find(p: &mut [usize], mut x: usize) -> usize { while p[x] != x { p[x] = p[p[x]]; x = p[x]; } x }
         let mut edge_vert: Vec<Option<usize>> = vec![None; s.complex.n_cells.get(1).copied().unwrap_or(0)];
         if let Some(inc0) = s.complex.inc.first() {
             for inc in inc0 {
