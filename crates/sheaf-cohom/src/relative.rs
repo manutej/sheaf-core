@@ -40,7 +40,7 @@ pub fn h0_relative(d0: &Csr, boundary: &[usize], policy: H0Policy, dense_max: us
     for &b in boundary { if b >= n { return Err(RelativeError::BoundaryIndex(b)); } is_b[b] = true; }
     // union interior columns that share a row
     let mut p: Vec<usize> = (0..n).collect();
-    fn find(p: &mut Vec<usize>, mut a: usize) -> usize { while p[a] != a { p[a] = p[p[a]]; a = p[a]; } a }
+    fn find(p: &mut [usize], mut a: usize) -> usize { while p[a] != a { p[a] = p[p[a]]; a = p[a]; } a }
     for r in 0..d0.nrows {
         let mut first: Option<usize> = None;
         for k in d0.ptr[r]..d0.ptr[r + 1] {
