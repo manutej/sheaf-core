@@ -76,5 +76,7 @@ pub fn h0_relative(d0: &Csr, boundary: &[usize], policy: H0Policy, dense_max: us
         for j in r..cols.len() { let mut g = vec![0.0; n]; for (q, &c) in cols.iter().enumerate() { g[c] = sv.v[(q, j)]; } basis_cols.push(g); }
     }
     let basis = Mat::<f64>::from_fn(n, basis_cols.len(), |i, j| basis_cols[j][i]);
-    Ok(Numerical::f64(RelativeH0 { dim: basis_cols.len(), basis, n_boundary_dofs: boundary.len(), n_blocks: blocks.len(), cuts, sigma_kept_min: kept_min, sigma_dropped_max: drop_max, policy }))
+    // B is a set of dofs: a repeated index is the same condition, and `is_b` already dropped it.
+    let n_boundary_dofs = is_b.iter().filter(|b| **b).count();
+    Ok(Numerical::f64(RelativeH0 { dim: basis_cols.len(), basis, n_boundary_dofs, n_blocks: blocks.len(), cuts, sigma_kept_min: kept_min, sigma_dropped_max: drop_max, policy }))
 }

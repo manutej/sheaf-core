@@ -385,3 +385,91 @@ proptest! {
         }}
     }
 }
+
+/// Nullity of the restriction of an absolute H⁰ basis `q` (columns) to the set of dofs `boundary`.
+/// Singular values must sit outside (1e-7, 1e-4); otherwise the rank is not decided and the function returns None.
+fn restriction_nullity(q: &Mat<f64>, boundary: &[usize]) -> Option<usize> {
+    let mut rows = boundary.to_vec();
+    rows.sort_unstable();
+    rows.dedup();
+    let h = q.ncols();
+    if rows.is_empty() || h == 0 { return Some(h); }
+    let r = Mat::<f64>::from_fn(rows.len(), h, |i, j| q[(rows[i], j)]);
+    let sv = svd_full(&r);
+    if sv.s.iter().any(|&sig| sig > 1e-7 && sig < 1e-4) { return None; }
+    let rank = sv.s.iter().filter(|&&sig| sig >= 1e-4).count();
+    Some(h - rank)
+}
+
+/// Path of two vertices, stalk R², edge map a shear. Pinning coordinate 0 at both ends
+/// imposes two independent conditions, so H⁰(X,B) = 0. The constant-sheaf count still sees one free coordinate.
+#[test]
+fn shear_gauge_restriction_kernel_kills_both_sections() {
+    let mut s = Sheaf::constant(CellComplex::simplicial(2, &[(0, 1)], &[]), 2);
+    // incidences: facet 0 (sign −1), then facet 1 (sign +1). δx = −x₀ + S x₁ with S = [[1, 1], [0, 1]].
+    let mut shear = Mat::<f64>::identity(2, 2);
+    shear[(0, 1)] = 1.0;
+    s.maps[0][1] = shear;
+    let boundary = [0usize, 0, 2];
+    assert_eq!(unpinned_constant_sections(&s, 2, &boundary), 1);
+    let h = relative_h0(&s, &boundary);
+    let q = CochainComplex::from_sheaf(&s).unwrap().cohomology(0).unwrap().harmonic_basis;
+    assert_eq!(q.ncols(), 2);
+    assert_eq!(restriction_nullity(&q, &boundary), Some(0));
+    assert_eq!(h.dim, 0);
+    assert_eq!(h.n_boundary_dofs, 2);
+}
+
+fn arb_gauge_or_constant() -> impl Strategy<Value = (Sheaf, Vec<usize>)> {
+    (arb_complex(), 1usize..3, any::<u64>(), any::<bool>()).prop_flat_map(|(cx, d, seed, twist)| {
+        let n0 = cx.n_cells[0] * d;
+        prop_oneof![
+            1 => Just(Vec::<usize>::new()),
+            4 => prop::collection::vec(0..n0, 0..=n0.min(6)),
+        ].prop_map(move |boundary| {
+            let s = if twist { gauge(&cx, d, seed) } else { Sheaf::constant(cx.clone(), d) };
+            (s, boundary)
+        })
+    })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+    /// Exactness of 0 → H⁰(X,B) → H⁰(X) → C⁰(B): relative dimension equals the nullity of
+    /// restriction of an absolute H⁰ basis, the relative basis is an orthonormal set of those
+    /// sections, and `n_boundary_dofs` is the number of distinct boundary dofs.
+    #[test]
+    fn relative_h0_matches_kernel_of_absolute_restriction((s, boundary) in arb_gauge_or_constant()) {
+        let q = CochainComplex::from_sheaf(&s).unwrap().cohomology(0).unwrap().harmonic_basis;
+        let nullity = restriction_nullity(&q, &boundary);
+        prop_assert!(nullity.is_some(), "restriction singular value fell in (1e-7, 1e-4)");
+        let nullity = nullity.unwrap();
+        let h = relative_h0(&s, &boundary);
+        prop_assert_eq!(h.dim, nullity);
+        prop_assert_eq!(h.basis.ncols(), h.dim);
+        let mut distinct = boundary.clone();
+        distinct.sort_unstable();
+        distinct.dedup();
+        prop_assert_eq!(h.n_boundary_dofs, distinct.len());
+        let n0 = s.cochain_dim(0);
+        prop_assert_eq!(h.basis.nrows(), n0);
+        prop_assert_eq!(q.nrows(), n0);
+        let mut on_b = vec![false; n0];
+        for &i in &boundary { on_b[i] = true; }
+        let (rows, cols, t) = s.coboundary_triplets(0);
+        let d0 = Csr::from_triplets(rows, cols, t);
+        let mut cols_g = Vec::with_capacity(h.dim);
+        for j in 0..h.dim {
+            let g: Vec<f64> = (0..n0).map(|i| h.basis[(i, j)]).collect();
+            for (i, &on) in on_b.iter().enumerate() { if on { prop_assert_eq!(g[i], 0.0); } }
+            prop_assert!(norm(&d0.mul(&g)) < 1e-8, "||δg||");
+            let p = project(&q, &g);
+            prop_assert!(norm(&p.iter().zip(&g).map(|(a, b)| a - b).collect::<Vec<_>>()) < 1e-7, "relative section not in H⁰");
+            cols_g.push(g);
+        }
+        for j in 0..h.dim { for i in 0..=j {
+            let want_dot = if i == j { 1.0 } else { 0.0 };
+            prop_assert!((dot(&cols_g[i], &cols_g[j]) - want_dot).abs() < 1e-8, "basis columns {i},{j}");
+        }}
+    }
+}
