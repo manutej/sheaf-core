@@ -194,7 +194,7 @@ impl Rng {
     fn u(&mut self) -> u64 { let mut s = self.0; s ^= s << 13; s ^= s >> 7; s ^= s << 17; self.0 = s; s }
     fn gauss(&mut self) -> f64 { let a = ((self.u() >> 11) as f64 + 0.5) / (1u64 << 53) as f64; let b = ((self.u() >> 11) as f64) / (1u64 << 53) as f64; (-2.0 * a.ln()).sqrt() * (2.0 * std::f64::consts::PI * b).cos() }
 }
-fn quant(v: &mut Vec<f64>, q: f64) -> f64 { v.sort_by(|a, b| a.partial_cmp(b).unwrap()); if v.is_empty() { return f64::NAN; } v[((v.len() - 1) as f64 * q).round() as usize] }
+fn quant(v: &mut [f64], q: f64) -> f64 { v.sort_by(|a, b| a.partial_cmp(b).unwrap()); if v.is_empty() { return f64::NAN; } v[((v.len() - 1) as f64 * q).round() as usize] }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Effect { EmitReport { path: Option<String>, contents: String } }
@@ -311,4 +311,69 @@ pub fn analyze(spec: &Spec, out_path: Option<String>) -> (Report, Vec<Effect>) {
     };
     let contents = report.to_json();
     (report, vec![Effect::EmitReport { path: out_path, contents }])
+}
+
+#[cfg(test)]
+mod quant_prop {
+    use super::quant;
+    use proptest::prelude::*;
+
+    /// Stable sort: an entry moves left only while it is strictly smaller, so ties keep their order.
+    /// `-0.0` and `0.0` compare equal, matching `partial_cmp`.
+    fn stable_nondecreasing(v: &[f64]) -> Vec<f64> {
+        let mut out = v.to_vec();
+        let mut i = 1usize;
+        while i < out.len() {
+            let mut j = i;
+            while j > 0 && out[j] < out[j - 1] {
+                out.swap(j, j - 1);
+                j -= 1;
+            }
+            i += 1;
+        }
+        out
+    }
+
+    fn arb_entry() -> impl Strategy<Value = f64> {
+        prop_oneof![
+            10 => -1.0e6f64..1.0e6,
+            1 => Just(0.0f64),
+            1 => Just(-0.0f64),
+            1 => Just(f64::INFINITY),
+            1 => Just(f64::NEG_INFINITY),
+        ]
+    }
+
+    fn arb_q() -> impl Strategy<Value = f64> {
+        prop_oneof![
+            1 => Just(0.0f64),
+            1 => Just(1.0f64),
+            8 => 0.0f64..=1.0,
+        ]
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(200))]
+
+        /// ∀ `sample` with length < 24 and no NaN (finite, ±0, or ±∞), ∀ `q` ∈ [0, 1]:
+        /// `quant` permutes `sample` into stable nondecreasing order.
+        /// An empty sample yields NaN. Otherwise the result is the entry at
+        /// index `round((n - 1) · q)` of that order, bit for bit (so `-0.0` stays `-0.0`).
+        #[test]
+        fn quant_matches_stable_order_statistic((mut sample, q) in (prop::collection::vec(arb_entry(), 0..24), arb_q())) {
+            let oracle = stable_nondecreasing(&sample);
+            let got = quant(&mut sample, q);
+            prop_assert_eq!(
+                sample.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+                oracle.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            );
+            if oracle.is_empty() {
+                prop_assert!(got.is_nan());
+            } else {
+                let idx = (((oracle.len() - 1) as f64) * q).round() as usize;
+                prop_assert!(idx < oracle.len());
+                prop_assert_eq!(got.to_bits(), oracle[idx].to_bits());
+            }
+        }
+    }
 }
