@@ -35,11 +35,19 @@ impl HodgeOp {
         for (m, _) in self.down.iter().chain(self.up.iter()) { let (a, b) = norm1_inf(m); s += a * b; }
         s
     }
-    /// diag(L) from the CSR pairs: (A A^T)_ii = sum_j A_ij^2 ; (B^T B)_ii = sum_r B_ri^2
+    /// diag(L) from the CSR pairs: (A A^T)_ii = sum_j A_ij^2 ; (B^T B)_ii = sum_r B_ri^2, where A_ij is the SUM of
+    /// the duplicate (i, j) entries `Csr` keeps (adjacent, since `from_triplets` sorts) - e.g. a loop edge's -F, +F.
     pub fn diagonal(&self) -> Vec<f64> {
+        fn merged_row(m: &Csr, i: usize) -> Vec<(usize, f64)> {
+            let mut r: Vec<(usize, f64)> = Vec::new();
+            for p in m.ptr[i]..m.ptr[i + 1] {
+                match r.last_mut() { Some((c, v)) if *c == m.idx[p] => *v += m.val[p], _ => r.push((m.idx[p], m.val[p])) }
+            }
+            r
+        }
         let mut d = vec![0.0; self.n];
-        if let Some((a, _)) = &self.down { for i in 0..a.nrows { for p in a.ptr[i]..a.ptr[i + 1] { d[i] += a.val[p] * a.val[p]; } } }
-        if let Some((b, _)) = &self.up { for i in 0..b.nrows { for p in b.ptr[i]..b.ptr[i + 1] { d[b.idx[p]] += b.val[p] * b.val[p]; } } }
+        if let Some((a, _)) = &self.down { for i in 0..a.nrows { for (_, v) in merged_row(a, i) { d[i] += v * v; } } }
+        if let Some((b, _)) = &self.up { for i in 0..b.nrows { for (c, v) in merged_row(b, i) { d[c] += v * v; } } }
         d
     }
     pub fn dense(&self) -> Mat<f64> {
