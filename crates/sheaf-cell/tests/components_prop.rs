@@ -74,3 +74,27 @@ proptest! {
         }
     }
 }
+
+/// Every directed graph on `n <= 3` vertices, self-loops and parallel edges included
+/// (each possible endpoint pair is either absent or present once).
+#[test]
+fn components_labels_match_bfs_for_every_graph_on_at_most_3_vertices() {
+    for n in 0..4 {
+        let pairs: Vec<(usize, usize)> = (0..n).flat_map(|u| (0..n).map(move |v| (u, v))).collect();
+        let masks = 1usize << pairs.len();
+        for mask in 0..masks {
+            let ends: Vec<(usize, usize)> = pairs.iter().copied().enumerate().filter(|(i, _)| mask & (1 << i) != 0).map(|(_, e)| e).collect();
+            let edges: Vec<GraphEdge> = ends.iter().map(|&(u, v)| GraphEdge {
+                u, v, fu: Mat::<f64>::zeros(0, 0), fv: Mat::<f64>::zeros(0, 0), label: String::new(),
+            }).collect();
+            let (comp, ok, nc) = graph::components(n, &edges);
+            let (want, want_nc) = min_index_bfs(n, &ends);
+            assert_eq!(comp, want);
+            assert_eq!(nc, want_nc);
+            assert_eq!(ok.len(), nc);
+            for &(u, v) in &ends {
+                assert_eq!(comp[u], comp[v]);
+            }
+        }
+    }
+}

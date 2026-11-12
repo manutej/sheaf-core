@@ -32,7 +32,7 @@ pub fn components(n: usize, edges: &[GraphEdge]) -> (Vec<usize>, Vec<bool>, usiz
     let mut p: Vec<usize> = (0..n).collect();
     for e in edges { let (a, b) = (find(&mut p, e.u), find(&mut p, e.v)); if a != b { p[a.max(b)] = a.min(b); } }
     let mut lab = vec![usize::MAX; n]; let mut nc = 0; let mut comp = vec![0; n];
-    for i in 0..n { let r = find(&mut p, i); if lab[r] == usize::MAX { lab[r] = nc; nc += 1; } comp[i] = lab[r]; }
+    for (i, c) in comp.iter_mut().enumerate() { let r = find(&mut p, i); if lab[r] == usize::MAX { lab[r] = nc; nc += 1; } *c = lab[r]; }
     let mut ok = vec![true; nc];
     for e in edges {
         let c = comp[e.u];
