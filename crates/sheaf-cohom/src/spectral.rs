@@ -303,6 +303,9 @@ pub struct H0Components {
     pub margin_ratio: Option<f64>,
 }
 
+/// A pair above its component's cut: (value, residual, component, eigenvector in component-local dofs).
+type NonzeroCand = (f64, f64, usize, Vec<f64>);
+
 /// Block-diagonal spectral analysis: L0 is block diagonal over connected components, so each component is
 /// solved on its own (dense EVD of ALL eigenvalues if its dofs <= dense_max, else Lanczos with k, widened x4 up to
 /// twice if all k+1 values are zero) and the results are merged. The zero cut is `so.h0` applied to EACH component's
@@ -315,7 +318,7 @@ pub fn spectral_components(dims: &[usize], edges: &[GraphEdge], so: &SpectralOpt
     let mut nodes_of = vec![vec![]; nc]; for (i, &c) in comp.iter().enumerate() { nodes_of[c].push(i); }
     let mut edges_of = vec![vec![]; nc]; for (j, e) in edges.iter().enumerate() { edges_of[comp[e.u]].push(j); }
     let mut local = vec![0usize; dims.len()];
-    let (mut known_dim, mut zeros, mut cands): (usize, Vec<EigPair>, Vec<(f64, f64, usize, Vec<f64>)>) = (0, vec![], vec![]);
+    let (mut known_dim, mut zeros, mut cands): (usize, Vec<EigPair>, Vec<NonzeroCand>) = (0, vec![], vec![]);
     let (mut cut_consistent, mut near_sections, mut cut_min, mut cut_max, mut margin) = (true, false, f64::INFINITY, 0.0f64, None::<f64>);
     let (mut rounds, mut converged, mut lower, mut inner, mut method) = (0, true, false, None::<(usize, usize, f64)>, "dense-evd");
     for c in 0..nc {
