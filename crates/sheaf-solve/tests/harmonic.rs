@@ -90,14 +90,14 @@ fn no_boundary_reduces_to_h0_projection() {
         let q = kernel_basis(&s);   // orthonormal basis of ker L0
         let c: Vec<f64> = (0..q.ncols()).map(|j| (0..n).map(|i| q[(i, j)] * x0[i]).sum()).collect();
         let px: Vec<f64> = (0..n).map(|i| (0..q.ncols()).map(|j| q[(i, j)] * c[j]).sum()).collect();
-        for i in 0..n { assert!((h.x[i] - px[i]).abs() < 1e-8, "{name} dof {i}: {} vs P_H0 x0 = {}", h.x[i], px[i]); }
+        for (i, &pxi) in px.iter().enumerate() { assert!((h.x[i] - pxi).abs() < 1e-8, "{name} dof {i}: {} vs P_H0 x0 = {}", h.x[i], pxi); }
         assert!(h.cert.energy < 1e-16 * (1.0 + x0.iter().map(|v| v * v).sum::<f64>()), "{name}: energy {}", h.cert.energy);
         assert!(h.cert.converged, "{name}: {:?}", h.cert);
         // default route on B = ∅: if H0 != 0, L is singular, so Cholesky must refuse and fall back to CG; if H0 = 0
         // (twisted cycle) the dense solve is legitimate and gives 0. Same answer either way.
         let hd = harmonic_extension(&dl, &[], Some(&x0), &Options::default()).unwrap();
         assert_eq!(hd.cert.route, if q.ncols() > 0 { Route::Cg } else { Route::Dense }, "{name}");
-        for i in 0..n { assert!((hd.x[i] - px[i]).abs() < 1e-8, "{name} dof {i} (default route)"); }
+        for (i, &pxi) in px.iter().enumerate() { assert!((hd.x[i] - pxi).abs() < 1e-8, "{name} dof {i} (default route)"); }
     }
 }
 
@@ -131,5 +131,23 @@ proptest! {
             let ey = energy(&dl, &y);
             prop_assert!(ey >= h.cert.energy - 1e-9 * (1.0 + h.cert.energy), "perturbed {} < extension {}", ey, h.cert.energy);
         }
+    }
+
+    /// B = ∅ on a constant sheaf over a path: ker δ⁰ is the node-constant vectors, so P_H0 x0 is the per-coordinate
+    /// mean over nodes. ∀ n in 2..10, d in 1..4, x0 in [-1, 1)^(n·d), on both routes: every dof (i, c) of the
+    /// extension is within 1e-8 of mean_j x0[j·d + c], and the solve reports convergence through CG.
+    #[test]
+    fn no_boundary_on_constant_path_is_the_coordinate_mean(
+        (n, d, x0) in (2usize..10, 1usize..4).prop_flat_map(|(n, d)| (Just(n), Just(d), proptest::collection::vec(-1.0f64..1.0, n * d))),
+        cg in any::<bool>(),
+    ) {
+        let dl = delta(&Sheaf::constant(path(n), d));
+        let o = if cg { CG_ONLY } else { Options::default() };
+        let h = harmonic_extension(&dl, &[], Some(&x0), &o).unwrap();
+        prop_assert!(h.cert.converged, "{:?}", h.cert);
+        prop_assert_eq!(h.cert.route, Route::Cg);
+        prop_assert_eq!(h.x.len(), n * d);
+        let mean: Vec<f64> = (0..d).map(|c| (0..n).map(|j| x0[j * d + c]).sum::<f64>() / n as f64).collect();
+        for (k, &xk) in h.x.iter().enumerate() { prop_assert!((xk - mean[k % d]).abs() < 1e-8, "dof {}: {} vs mean {}", k, xk, mean[k % d]); }
     }
 }
