@@ -130,5 +130,26 @@ proptest! {
         for (a, b) in sp.pairs.iter().zip(&reference) { prop_assert!((a.value - b).abs() <= TOL * scale, "{:e} vs {:e}", a.value, b); }
         if !sp.h0_lower_bound_only { prop_assert_eq!(sp.h0_dim(), cc.cohomology(0).unwrap().dim); }
     }
+
+    /// ∀ random graph sheaves with more than 140 dofs (so the Lanczos path runs, not the dense fallback):
+    /// two `smallest` calls with equal (default shift-invert) options return bit-identical spectra
+    /// (values, residuals, vectors, rounds, inner stats, flags).
+    #[test]
+    fn smallest_is_bitwise_deterministic((s, _rnd) in arb_graph_sheaf()) {
+        let op = op_for(&s, 0);
+        prop_assume!(op.n > 140);
+        let o = SpectralOpts { k: 5, dense_max: 0, ..Default::default() };
+        let known = KnownKernel::none(op.n);
+        prop_assert_eq!(fingerprint(&smallest(&op, &known, &o)), fingerprint(&smallest(&op, &known, &o)));
+    }
 }
 
+/// Every numeric field of a `Spectral` as raw bits, so equality is exact (no tolerance, NaN-safe).
+fn fingerprint(sp: &Spectral) -> (Vec<u64>, &'static str, usize, bool, bool) {
+    let mut b: Vec<u64> = sp.pairs.iter().flat_map(|p| [p.value.to_bits(), p.residual.to_bits()]).collect();
+    b.extend(sp.vectors.iter().flatten().map(|x| x.to_bits()));
+    b.extend([sp.c_shift, sp.lambda_max_bound, sp.zero_tol, sp.sigma].map(f64::to_bits));
+    if let Some((solves, iters, worst)) = sp.inner { b.extend([solves as u64, iters as u64, worst.to_bits()]); }
+    b.extend([sp.n, sp.known_kernel_dim, sp.found_zero].map(|x| x as u64));
+    (b, sp.method, sp.rounds, sp.converged, sp.h0_lower_bound_only)
+}

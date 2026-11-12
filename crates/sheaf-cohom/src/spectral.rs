@@ -257,7 +257,7 @@ pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral
             if lam <= thr * (1.0 + 1e-8) + 1e-14 { new_below += 1; }
             fresh.push((lam, v));
         }
-        drop(a); drop(si);
+        drop(si);
         for (lam, v) in fresh { locked.push(v); lvals.push(lam); }
         if round > 0 && new_below == 0 { break; }
         if nc == 0 { break; }
