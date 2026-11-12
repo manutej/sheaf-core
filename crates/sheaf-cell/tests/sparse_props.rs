@@ -2,6 +2,7 @@ use proptest::prelude::*;
 use sheaf_cell::complex::{CellComplex, Incidence};
 use sheaf_cell::num::sparse::{transpose, Csr};
 use sheaf_cell::num::dot;
+use sheaf_cell::num::linalg::svd_full;
 use sheaf_cell::ops::{edge_discord, energy, HodgeOp};
 use sheaf_cell::sheaf::Sheaf;
 
@@ -54,6 +55,24 @@ proptest! {
         let mut l0x = vec![0.0; a.ncols];
         HodgeOp::l0(&a).apply(&x, &mut l0x);
         prop_assert_eq!(dot(&x, &l0x), e);
+    }
+
+    /// HodgeOp::norm_bound() >= ||L||_2 for L = A A^T + B^T B (any subset of the terms), including CSRs whose
+    /// duplicate entries `norm1_inf` sums by absolute value. Checked two ways: exactly, ||L x||^2 <= bound^2 ||x||^2
+    /// for an integer x (integer data keeps both sides exact in f64), and against sigma_max(L) from a dense SVD.
+    #[test]
+    fn hodge_norm_bound_dominates_the_spectral_norm(
+        (a, b) in arb_down_up(), use_a: bool, use_b: bool, x in prop::collection::vec(-4i8..=4, 5),
+    ) {
+        let n = a.nrows;
+        let op = HodgeOp::general(n, use_a.then_some(&a), use_b.then_some(&b));
+        let bound = op.norm_bound();
+        let x: Vec<f64> = x[..n].iter().map(|&v| v as f64).collect();
+        let mut lx = vec![0.0; n];
+        op.apply(&x, &mut lx);
+        prop_assert!(dot(&lx, &lx) <= bound * bound * dot(&x, &x));
+        let sigma_max = svd_full(&op.dense()).s.into_iter().fold(0.0, f64::max);
+        prop_assert!(sigma_max <= bound * (1.0 + 1e-12) + 1e-12, "sigma_max {} > bound {}", sigma_max, bound);
     }
 }
 
