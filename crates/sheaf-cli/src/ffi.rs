@@ -8,6 +8,7 @@
 //!   stated sizes (the shim's `_csr_args` verifies indptr = nrows+1 and indptr[-1] = len(indices) = len(data) first);
 //! * returns -1 if Rust panicked (caught here; nothing unwinds across the boundary), -3 for an R-PERF-18 cap
 //!   (the shim checks every cap first with the reference's own messages, so -3 is defence in depth), -4 numeric failure.
+//!
 //! Admission (R-DIM-02 / R-FINITE-01 / R-PERF-18 with the exact SPEC messages) stays in the shim, unchanged.
 #![allow(clippy::missing_safety_doc, clippy::too_many_arguments)]
 use sheaf_cell::m1 as cell;
