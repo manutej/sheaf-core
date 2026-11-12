@@ -80,7 +80,8 @@ proptest! {
     /// ∀ sizes below 6, ∀ triplets in range with values in {-1, 0, 1}, ∀ boundary lists
     /// (indices may be `≥ ncols`):
     /// an out-of-range index yields `BoundaryIndex` of the first such index;
-    /// otherwise `n_boundary_dofs` equals `boundary.len()` and `n_blocks` equals the
+    /// otherwise `n_boundary_dofs` equals the number of distinct boundary indices (a repeat is
+    /// the same dof) and `n_blocks` equals the
     /// interior-column component count (nonzero row-sharing; explicit zeros do not connect).
     #[test]
     fn h0_relative_n_blocks_matches_interior_components(
@@ -93,7 +94,10 @@ proptest! {
             Some(b) => prop_assert_eq!(got.unwrap_err(), RelativeError::BoundaryIndex(b)),
             None => {
                 let rel = got.unwrap().value;
-                prop_assert_eq!(rel.n_boundary_dofs, boundary.len());
+                let mut distinct = boundary.clone();
+                distinct.sort_unstable();
+                distinct.dedup();
+                prop_assert_eq!(rel.n_boundary_dofs, distinct.len());
                 prop_assert_eq!(rel.n_blocks, interior_blocks(nrows, ncols, &trips, &boundary));
             }
         }
