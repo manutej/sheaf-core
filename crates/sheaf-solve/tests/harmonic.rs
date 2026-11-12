@@ -126,7 +126,8 @@ proptest! {
         let bset: Vec<usize> = bd.iter().map(|p| p.0).collect();
         for _ in 0..4 {
             let mut y = h.x.clone();
-            for i in 0..y.len() { if !bset.contains(&i) { y[i] += eps * lcg(&mut sd); } }
+            for (i, yi) in y.iter_mut().enumerate() { if !bset.contains(&i) { *yi += eps * lcg(&mut sd); } }
+            for &b in &bset { prop_assert_eq!(y[b].to_bits(), h.x[b].to_bits(), "boundary dof {} moved", b); }
             let ey = energy(&dl, &y);
             prop_assert!(ey >= h.cert.energy - 1e-9 * (1.0 + h.cert.energy), "perturbed {} < extension {}", ey, h.cert.energy);
         }
