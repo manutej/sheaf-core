@@ -1,7 +1,8 @@
 use proptest::prelude::*;
-use sheaf_cell::{complex::CellComplex, num::linalg::*, sheaf::Sheaf};
+use sheaf_cell::{complex::CellComplex, num::{linalg::*, sparse::Csr, tol::H0Policy}, sheaf::Sheaf};
 use sheaf_cohom::cohomology::*;
 use sheaf_cohom::fp;
+use sheaf_cohom::relative::h0_relative;
 use faer::Mat;
 use faer::linalg::solvers::DenseSolveCore;
 
@@ -267,5 +268,120 @@ proptest! {
     fn rank_mod_p_equals_determinantal_rank(case in arb_fp_matrix()) {
         let (p, m, cols) = case;
         prop_assert_eq!(fp::rank_mod_p(&m, cols, p), det_rank(&m, cols, p), "p={} m={:?}", p, m);
+    }
+}
+
+/// Component label of each vertex in the 1-skeleton (edges only; faces do not affect H⁰).
+fn vertex_components(s: &Sheaf) -> Vec<usize> {
+    let nv = s.complex.n_cells.first().copied().unwrap_or(0);
+    let mut parent: Vec<usize> = (0..nv).collect();
+    fn find(p: &mut [usize], mut x: usize) -> usize {
+        while p[x] != x { p[x] = p[p[x]]; x = p[x]; }
+        x
+    }
+    if let Some(edges) = s.complex.verts.get(1) {
+        for e in edges {
+            if e.len() >= 2 {
+                let (a, b) = (find(&mut parent, e[0]), find(&mut parent, e[1]));
+                if a != b { parent[a] = b; }
+            }
+        }
+    }
+    let mut label = vec![usize::MAX; nv];
+    let mut n = 0;
+    (0..nv).map(|v| {
+        let r = find(&mut parent, v);
+        if label[r] == usize::MAX { label[r] = n; n += 1; }
+        label[r]
+    }).collect()
+}
+
+/// Constant sheaf: δ⁰ is the graph incidence matrix, once per stalk coordinate, and those
+/// coordinates do not mix. A coordinate on a component survives in H⁰(X,B) exactly when
+/// B misses it on every vertex of that component.
+fn unpinned_constant_sections(s: &Sheaf, d: usize, boundary: &[usize]) -> usize {
+    let comp = vertex_components(s);
+    let ncomp = comp.iter().copied().max().map(|m| m + 1).unwrap_or(0);
+    let mut hit = vec![vec![false; d]; ncomp];
+    for &b in boundary {
+        let (v, k) = (b / d, b % d);
+        if v < comp.len() && k < d { hit[comp[v]][k] = true; }
+    }
+    hit.iter().map(|row| row.iter().filter(|h| !**h).count()).sum()
+}
+
+fn relative_h0(s: &Sheaf, boundary: &[usize]) -> sheaf_cohom::relative::RelativeH0 {
+    let (rows, cols, t) = s.coboundary_triplets(0);
+    h0_relative(&Csr::from_triplets(rows, cols, t), boundary, H0Policy::adr012(), 1500).unwrap().value
+}
+
+#[test]
+fn relative_h0_unpinned_count_anchors() {
+    let path = CellComplex::simplicial(4, &[(0, 1), (1, 2), (2, 3)], &[]);
+    let s = Sheaf::constant(path, 1);
+    assert_eq!(unpinned_constant_sections(&s, 1, &[]), 1);
+    assert_eq!(relative_h0(&s, &[]).dim, 1);
+    assert_eq!(relative_h0(&s, &[0]).dim, 0);
+    assert_eq!(relative_h0(&s, &[0, 0]).dim, 0);
+    // two paths, stalk R^2. Dofs are vertex-major: vertex v owns 2v and 2v+1.
+    // Pinning coordinate 0 on vertex 0 leaves three sections; pinning it on both components leaves the two coordinate-1 sections.
+    let split = CellComplex::simplicial(4, &[(0, 1), (2, 3)], &[]);
+    let t = Sheaf::constant(split, 2);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[]), 4);
+    assert_eq!(relative_h0(&t, &[]).dim, 4);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[0]), 3);
+    assert_eq!(relative_h0(&t, &[0]).dim, 3);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[0, 2]), 3);
+    assert_eq!(relative_h0(&t, &[0, 2]).dim, 3);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[0, 4]), 2);
+    assert_eq!(relative_h0(&t, &[0, 4]).dim, 2);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[0, 1]), 2);
+    assert_eq!(relative_h0(&t, &[0, 1]).dim, 2);
+    assert_eq!(unpinned_constant_sections(&t, 2, &[0, 1, 2, 3]), 2);
+    assert_eq!(relative_h0(&t, &[0, 1, 2, 3]).dim, 2);
+}
+
+fn arb_constant_relative() -> impl Strategy<Value = (Sheaf, usize, Vec<usize>)> {
+    (arb_complex(), 1usize..3).prop_flat_map(|(cx, d)| {
+        let n0 = cx.n_cells[0] * d;
+        prop_oneof![
+            1 => Just(Vec::<usize>::new()),
+            1 => Just((0..n0).collect::<Vec<_>>()),
+            4 => prop::collection::vec(0..n0, 0..=n0.min(6)),
+        ].prop_map(move |boundary| (Sheaf::constant(cx.clone(), d), d, boundary))
+    })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(128))]
+    /// Constant sheaf: dim H⁰(X,B) equals the number of (1-skeleton component, stalk coordinate)
+    /// pairs that B misses. The basis is orthonormal, supported off B, and δ⁰-closed.
+    #[test]
+    fn relative_h0_counts_unpinned_component_coordinates((s, d, boundary) in arb_constant_relative()) {
+        let want = unpinned_constant_sections(&s, d, &boundary);
+        let h = relative_h0(&s, &boundary);
+        prop_assert_eq!(h.dim, want);
+        prop_assert_eq!(h.basis.ncols(), h.dim);
+        let n0 = s.cochain_dim(0);
+        prop_assert_eq!(h.basis.nrows(), n0);
+        let abs = CochainComplex::from_sheaf(&s).unwrap().cohomology(0).unwrap().dim;
+        prop_assert!(h.dim <= abs);
+        if boundary.is_empty() { prop_assert_eq!(h.dim, abs); }
+        let (rows, cols, t) = s.coboundary_triplets(0);
+        let d0 = Csr::from_triplets(rows, cols, t);
+        let mut on_b = vec![false; n0];
+        for &i in &boundary { on_b[i] = true; }
+        let mut cols_g = Vec::with_capacity(h.dim);
+        for j in 0..h.dim {
+            let g: Vec<f64> = (0..n0).map(|i| h.basis[(i, j)]).collect();
+            for (i, &on) in on_b.iter().enumerate() { if on { prop_assert_eq!(g[i], 0.0); } }
+            let resid = norm(&d0.mul(&g));
+            prop_assert!(resid < 1e-8, "||δg||={resid}");
+            cols_g.push(g);
+        }
+        for j in 0..h.dim { for i in 0..=j {
+            let want_dot = if i == j { 1.0 } else { 0.0 };
+            prop_assert!((dot(&cols_g[i], &cols_g[j]) - want_dot).abs() < 1e-8, "basis columns {i},{j}");
+        }}
     }
 }
