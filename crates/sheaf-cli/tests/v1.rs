@@ -109,10 +109,10 @@ fn v1_options_method_parsed_and_unknown_rejected() {
 #[test]
 fn adversarial_tiny_spec_huge_dims_refused_before_alloc() {
     let huge = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":200000},{"id":"b","dim":200000}],"edges":[{"u":0,"v":1}],"w":[]}"#;
-    let e = sheaf_cli::v1::parse(huge).err().expect("must be refused");
+    let e = sheaf_cli::v1::parse(huge).expect_err("must be refused");
     assert!(e.to_string().contains("restriction maps exceed"), "{e}");
     let wrap = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":18446744073709551615},{"id":"b","dim":1}],"edges":[],"w":[]}"#;
-    let e = sheaf_cli::v1::parse(wrap).err().expect("must be refused");
+    let e = sheaf_cli::v1::parse(wrap).expect_err("must be refused");
     assert!(e.to_string().contains("total stalk dimension"), "{e}");
     let de = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1}],"edges":[{"u":0,"v":1,"de":4294967296}],"w":[[0]]}"#;
     assert!(sheaf_cli::v1::parse(de).is_err());
@@ -124,7 +124,7 @@ fn adversarial_tiny_spec_huge_dims_refused_before_alloc() {
 fn adversarial_overflowing_entries_refused_not_panicking() {
     for t in [r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1},{"id":"c","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e300]],"Fv":[[1e300]]},{"u":1,"v":2}],"x":[[1e300],[-1e300],[0]]}"#,
               r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e200]],"Fv":[[1e200]]}],"w":[[1]]}"#] {
-        let e = sheaf_cli::v1::parse(t).err().expect("must be refused");
+        let e = sheaf_cli::v1::parse(t).expect_err("must be refused");
         assert!(e.to_string().contains("exceeds 1e75"), "{e}");
     }
     // the largest admitted magnitude runs to completion without panicking
