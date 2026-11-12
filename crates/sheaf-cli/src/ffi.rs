@@ -67,7 +67,7 @@ pub unsafe extern "C" fn sheaf_m1_coboundary(nv: i64, dv: *const i64, ne: i64, u
             let (uj, vj) = (us(u[j])?, us(v[j])?);
             if uj >= nv || vj >= nv { return Err(E_INPUT); }
             let la = de[j].checked_mul(dv[uj]).ok_or(E_INPUT)?; let lb = de[j].checked_mul(dv[vj]).ok_or(E_INPUT)?;
-            if a.checked_add(la).map_or(true, |e| e > fu.len()) || b.checked_add(lb).map_or(true, |e| e > fv.len()) { return Err(E_INPUT); }
+            if a.checked_add(la).is_none_or(|e| e > fu.len()) || b.checked_add(lb).is_none_or(|e| e > fv.len()) { return Err(E_INPUT); }
             edges.push(cell::M1Edge { u: uj, v: vj, de: de[j], fu: &fu[a..a + la], fv: &fv[b..b + lb] }); a += la; b += lb;
         }
         if a != fu.len() || b != fv.len() { return Err(E_INPUT); }
