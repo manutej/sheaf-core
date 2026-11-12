@@ -10,6 +10,7 @@
 //!   which gives scipy's SpGEMM pattern (`csr_matmat` stores only nonzero sums; checked by the stored-entry counts in
 //!   the parity tests). Columns sorted.
 //! * `edge_discord` sums squared residuals over each edge's rows in row order (= `np.bincount`).
+//!
 //! Input admission (R-DIM-02 / R-FINITE-01 / R-PERF-18 caps with their exact messages) stays with the caller: in the
 //! gate that is the Python shim (`python/m1/sheafimpl_rs.py`), in Rust it is `sheaf_contract::SheafSpec::validate`
 //! (sheaf-cli's m1 adapter) plus `check_*` below.
