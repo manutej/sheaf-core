@@ -120,7 +120,8 @@ fn cholesky_solve(a: &mut [f64], n: usize, b: &[f64], tol: f64) -> Option<Vec<f6
     for j in 0..n {
         let mut d = a[j * n + j];
         for k in 0..j { d -= a[j * n + k] * a[j * n + k]; }
-        if !(d > tol) { return None; }
+        let pivot_ok = d > tol; // false for a NaN pivot (or NaN tol) as well as d <= tol
+        if !pivot_ok { return None; }
         let d = d.sqrt(); a[j * n + j] = d;
         for i in j + 1..n {
             let mut s = a[i * n + j];
@@ -132,4 +133,31 @@ fn cholesky_solve(a: &mut [f64], n: usize, b: &[f64], tol: f64) -> Option<Vec<f6
     for i in 0..n { for k in 0..i { y[i] -= a[i * n + k] * y[k]; } y[i] /= a[i * n + i]; }
     for i in (0..n).rev() { for k in i + 1..n { y[i] -= a[k * n + i] * y[k]; } y[i] /= a[i * n + i]; }
     Some(y)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cholesky_solve;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Pivot admission on diagonal matrices: ∀ n < 6, ∀ diagonal in f64ⁿ (any bit pattern, NaN, ±∞, tol itself),
+        /// ∀ finite b, ∀ tol that is ≥ 0 or NaN: `cholesky_solve` returns `Some` iff every diagonal entry is `> tol`.
+        /// (With zero off-diagonals and tol ≥ 0 the j-th pivot is exactly the j-th diagonal entry.)
+        #[test]
+        fn cholesky_solve_admits_iff_every_diagonal_pivot_exceeds_tol(
+            tol in prop_oneof![0.0f64..1.0, Just(0.0), Just(f64::INFINITY), Just(f64::NAN)],
+            picks in proptest::collection::vec((0u8..4, -1.0f64..2.0, any::<u64>(), -1e3f64..1e3), 0..6),
+        ) {
+            let n = picks.len();
+            let diag: Vec<f64> = picks.iter().map(|&(sel, x, bits, _)| match sel {
+                0 => tol, 1 => f64::NAN, 2 => f64::from_bits(bits), _ => x,
+            }).collect();
+            let mut a = vec![0.0; n * n];
+            for (j, &d) in diag.iter().enumerate() { a[j * n + j] = d; }
+            let b: Vec<f64> = picks.iter().map(|p| p.3).collect();
+            let got = cholesky_solve(&mut a, n, &b, tol);
+            prop_assert_eq!(got.is_some(), diag.iter().all(|&d| d > tol), "diag {:?} tol {}", diag, tol);
+        }
+    }
 }
