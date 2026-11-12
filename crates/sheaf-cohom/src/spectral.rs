@@ -175,7 +175,7 @@ impl Spectral {
     /// A policy check, not a kernel certificate (Krylov completeness is not certified).
     pub fn cut_consistent_with_residuals(&self) -> bool {
         let (z, nz) = self.cut();
-        z.map_or(true, |p| p.value + p.residual <= self.zero_tol) && nz.map_or(!self.h0_lower_bound_only, |p| p.value - p.residual > self.zero_tol)
+        z.is_none_or(|p| p.value + p.residual <= self.zero_tol) && nz.map_or(!self.h0_lower_bound_only, |p| p.value - p.residual > self.zero_tol)
     }
     /// Diagnostic flag, NOT a second count (ADR-015): some pair counted zero by the policy is numerically resolvable
     /// from 0, i.e. lambda > max(64 eps ||L||_bound, 10 * residual). Such a pair is a "near section".
