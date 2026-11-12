@@ -17,7 +17,7 @@ fn main() {
             let top = f.sheaf.complex.dim();
             let down = if k > 0 { Some(csr(&f.sheaf, k - 1)) } else { None }; let up = if k < top { Some(csr(&f.sheaf, k)) } else { None };
             let op = HodgeOp::general(f.sheaf.cochain_dim(k), down.as_ref(), up.as_ref());
-            let r = dense_eigs(&cc, k); let sp = smallest(&op, &KnownKernel::none(op.n), &SpectralOpts { k: (op.n - 1).min(6).max(1), ..Default::default() });
+            let r = dense_eigs(&cc, k); let sp = smallest(&op, &KnownKernel::none(op.n), &SpectralOpts { k: (op.n - 1).clamp(1, 6), ..Default::default() });
             let sc = r.last().unwrap().max(1.0);
             for (a, b) in sp.pairs.iter().zip(&r) { worst_fix = worst_fix.max((a.value - b).abs() / sc); worst_res_fix = worst_res_fix.max(a.residual / sc); }
             h0_n += 1; if sp.h0_dim() == f.expect_r[k] { h0_ok += 1; }
