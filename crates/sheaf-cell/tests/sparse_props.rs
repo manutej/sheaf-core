@@ -1,7 +1,8 @@
 use proptest::prelude::*;
 use sheaf_cell::complex::{CellComplex, Incidence};
 use sheaf_cell::num::sparse::{transpose, Csr};
-use sheaf_cell::ops::HodgeOp;
+use sheaf_cell::num::dot;
+use sheaf_cell::ops::{edge_discord, energy, HodgeOp};
 use sheaf_cell::sheaf::Sheaf;
 
 /// Random r x c CSR (1 <= r, c <= 5) with small-integer entries; repeated (row, col) triplets are frequent, and
@@ -33,6 +34,26 @@ proptest! {
         let op = HodgeOp::general(n, use_a.then_some(&a), use_b.then_some(&b));
         let dense = op.dense();
         prop_assert_eq!(op.diagonal(), (0..n).map(|i| dense[(i, i)]).collect::<Vec<_>>());
+    }
+
+    /// For any d0 and any edge_offsets partitioning 0..d0.nrows into contiguous blocks (0 = o_0 <= ... <= o_m = nrows):
+    /// edge_discord has m entries, each >= 0, they sum to energy(d0, x), and energy == x^T L0 x for L0 = HodgeOp::l0.
+    /// Integer entries keep every square, sum and product exact, so the equalities are bitwise.
+    #[test]
+    fn edge_discord_sums_to_energy_and_energy_is_the_l0_quadratic_form(
+        a in arb_csr(), x in prop::collection::vec(-4i8..=4, 5), cuts in prop::collection::vec(0usize..6, 0..6),
+    ) {
+        let x: Vec<f64> = x[..a.ncols].iter().map(|&v| v as f64).collect();
+        let mut offs: Vec<usize> = cuts.into_iter().map(|c| c.min(a.nrows)).collect();
+        offs.extend([0, a.nrows]); offs.sort_unstable();
+        let dis = edge_discord(&a, &x, &offs);
+        let e = energy(&a, &x);
+        prop_assert_eq!(dis.len(), offs.len() - 1);
+        prop_assert!(dis.iter().all(|&v| v >= 0.0));
+        prop_assert_eq!(dis.iter().sum::<f64>(), e);
+        let mut l0x = vec![0.0; a.ncols];
+        HodgeOp::l0(&a).apply(&x, &mut l0x);
+        prop_assert_eq!(dot(&x, &l0x), e);
     }
 }
 
