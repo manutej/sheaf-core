@@ -61,7 +61,21 @@ fn translation_loop_drift_is_purely_harmonic_and_exact_data_has_none() {
     assert!(h2.energies().1 < 1e-24);
     // potential recovers x up to the constant (H^0) direction
     let shift = x[0] - h2.potential[0];
-    for i in 0..3 { assert!((h2.potential[i] + shift - x[i]).abs() < 1e-10); }
+    for (i, &xi) in x.iter().enumerate() { assert!((h2.potential[i] + shift - xi).abs() < 1e-10); }
+}
+
+proptest::proptest! {
+    /// Node-explainable data on a cycle: for every node vector x, `hodge(1, d0 x)` has no harmonic part and its
+    /// potential equals x up to the constant (H^0) direction, on every node.
+    #[test]
+    fn hodge_potential_recovers_node_data_up_to_constant(x in proptest::collection::vec(-8.0f64..8.0, 3..=6)) {
+        let cc = CochainComplex::from_sheaf(&Sheaf::constant(cycle_graph(x.len()), 1)).unwrap();
+        let h = cc.hodge(1, &matvec(&cc.delta[0], &x));
+        proptest::prop_assert!(h.energies().1 < 1e-20, "harmonic energy {}", h.energies().1);
+        proptest::prop_assert_eq!(h.potential.len(), x.len());
+        let shift = x[0] - h.potential[0];
+        for (i, &xi) in x.iter().enumerate() { proptest::prop_assert!((h.potential[i] + shift - xi).abs() < 1e-9, "node {}", i); }
+    }
 }
 
 #[test]
