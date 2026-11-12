@@ -12,7 +12,8 @@ pub fn to_int(a: &Mat<f64>) -> Option<Vec<Vec<i64>>> {
     let mut out = vec![vec![0i64; a.ncols()]; a.nrows()];
     for i in 0..a.nrows() { for j in 0..a.ncols() {
         let v = a[(i, j)];
-        if !v.is_finite() || v.abs() > MAX_EXACT_INT || !((v - v.round()).abs() <= 1e-12) { return None; }
+        let exact = v.is_finite() && v.abs() <= MAX_EXACT_INT && (v - v.round()).abs() <= 1e-12; // every clause is false for NaN
+        if !exact { return None; }
         out[i][j] = v.round() as i64;
     }}
     Some(out)
