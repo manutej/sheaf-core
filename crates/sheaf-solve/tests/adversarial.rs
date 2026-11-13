@@ -13,3 +13,15 @@ fn ill_scaled_extension_is_solved_or_not_certified() {
     let c = harmonic_extension(&d, &[(0, 1.0)], None, &Options { dense_max: 0, ..Default::default() }).unwrap();
     assert!(!c.cert.converged || c.cert.energy <= 1e-6, "CG: converged=true with energy {}", c.cert.energy);
 }
+
+/// An overflowed residual scale is not a certificate. δ = [2^-270, ·] with the second column empty, B = ∅, start
+/// (2^540, 0): ‖x_start‖² = 2^1080 = +inf in f64, so residual/scale was 1/inf = 0 and the untouched start
+/// (L x = (1, 0), exact relative residual 1, energy 2^540; the minimiser is x = 0) came back converged = true.
+#[test]
+fn overflowed_scale_is_not_certified() {
+    let d = Csr { nrows: 1, ncols: 2, ptr: vec![0, 1], idx: vec![0], val: vec![2f64.powi(-270)] };
+    for dense_max in [400, 0] {
+        let h = harmonic_extension(&d, &[], Some(&[2f64.powi(540), 0.0]), &Options { dense_max, ..Default::default() }).unwrap();
+        assert!(!h.cert.converged || h.cert.energy <= 1e-6, "converged=true with ‖(Lx)_I‖ = {} and energy {}", h.cert.residual_abs, h.cert.energy);
+    }
+}

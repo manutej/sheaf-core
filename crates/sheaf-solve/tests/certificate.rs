@@ -14,14 +14,27 @@ fn close(a: f64, b: f64) -> bool { (a - b).abs() <= 1e-12 * a.abs().max(b.abs())
 
 /// a value m·2^e with m ∈ −4..=4 (0 allowed), e ∈ −20..=20
 fn scaled() -> impl Strategy<Value = f64> { (-4i32..=4, -20i32..=20).prop_map(|(m, e)| m as f64 * 2f64.powi(e)) }
+/// a nonzero value ±m·2^e with m ∈ 1..=4, e ∈ −600..=600: squares and products leave the f64 range
+fn extreme() -> impl Strategy<Value = f64> { (1i32..=4, any::<bool>(), -600i32..=600).prop_map(|(m, neg, e)| if neg { -1.0 } else { 1.0 } * m as f64 * 2f64.powi(e)) }
+/// (m, n, optional entries of an m × n δ, boundary mask, boundary values, start, use the start?)
+type Problem = (usize, usize, Vec<Option<f64>>, Vec<bool>, Vec<f64>, Vec<f64>, bool);
+fn problem<S: Strategy<Value = f64>>(v: fn() -> S) -> impl Strategy<Value = Problem> {
+    (1usize..5, 1usize..6).prop_flat_map(move |(m, n)| (
+        Just(m), Just(n), prop::collection::vec(prop::option::weighted(0.6, v()), m * n), prop::collection::vec(any::<bool>(), n),
+        prop::collection::vec(v(), n), prop::collection::vec(v(), n), any::<bool>()))
+}
+/// the documented scale max(‖L_IB x_B‖, ‖δ_I‖₁‖δ_I‖∞·max(‖x_I‖, ‖x_start,I‖), 1e-300); `int` marks the interior columns
+fn scale(d: &[Vec<f64>], int: &[bool], l_ib_xb: f64, xi: f64, start: f64) -> f64 {
+    let rinf = d.iter().map(|r| r.iter().zip(int).filter(|p| *p.1).map(|p| p.0.abs()).sum::<f64>()).fold(0.0, f64::max);
+    let c1 = (0..int.len()).filter(|&j| int[j]).map(|j| d.iter().map(|r| r[j].abs()).sum::<f64>()).fold(0.0, f64::max);
+    l_ib_xb.max(rinf * c1 * xi.max(start)).max(1e-300)
+}
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(128))]
     #[test]
     fn certificate_is_the_documented_function_of_x(
-        (m, n, vals, mask, bvals, x0, use_x0) in (1usize..5, 1usize..6).prop_flat_map(|(m, n)| (
-            Just(m), Just(n), prop::collection::vec(prop::option::weighted(0.6, scaled()), m * n), prop::collection::vec(any::<bool>(), n),
-            prop::collection::vec(scaled(), n), prop::collection::vec(scaled(), n), any::<bool>())),
+        (m, n, vals, mask, bvals, x0, use_x0) in problem(scaled),
         cg in any::<bool>(),
     ) {
         let d: Vec<Vec<f64>> = (0..m).map(|r| (0..n).map(|c| vals[r * n + c].unwrap_or(0.0)).collect()).collect();
@@ -43,15 +56,33 @@ proptest! {
         prop_assert!(close(c.energy, e), "energy {} vs ‖δx‖² {}", c.energy, e);
         // scale = max(‖L_IB x_B‖, ‖δ_I‖₁‖δ_I‖∞·max(‖x_I‖, ‖x_start,I‖), 1e-300)
         let xb: Vec<f64> = (0..n).map(|i| if mask[i] { bvals[i] } else { 0.0 }).collect();
-        let rinf = d.iter().map(|r| pick(&r.iter().map(|a| a.abs()).collect::<Vec<_>>()).iter().sum::<f64>()).fold(0.0, f64::max);
-        let c1 = pick(&(0..n).map(|j| d.iter().map(|r| r[j].abs()).sum::<f64>()).collect::<Vec<_>>()).into_iter().fold(0.0, f64::max);
         let start = if use_x0 { nrm(&pick(&x0)) } else { 0.0 };
-        let scale = nrm(&l_keep(&d, &xb, &int)).max(rinf * c1 * nrm(&pick(x)).max(start)).max(1e-300);
+        let scale = scale(&d, &int, nrm(&l_keep(&d, &xb, &int)), nrm(&pick(x)), start);
         prop_assert!(scale.is_finite());
         if int.contains(&true) { prop_assert!(close(c.residual_rel, res / scale), "residual_rel {} vs {}/{}", c.residual_rel, res, scale); }
         else { prop_assert_eq!(c.residual_rel, 0.0); }
         // converged ⇔ residual within max(rtol, 1e-10) of that scale: a certified x satisfies the documented bound
         prop_assert_eq!(c.converged, c.residual_rel <= 1e-10, "{:?}", c);
         if c.converged { prop_assert!(res <= 1e-10 * scale * (1.0 + 1e-9), "converged but ‖(Lx)_I‖ = {} > 1e-10·{}", res, scale); }
+    }
+
+    /// The same bound where f64 overflows: entries, boundary values and starts up to 4·2^±600 make ‖x‖, ‖L_IB x_B‖ or
+    /// the L_II bound +inf. `converged` is then refused: it always means ‖(Lx)_I‖ ≤ 1e-10·scale with a FINITE scale.
+    #[test]
+    fn converged_means_a_finite_scale_bounds_the_residual((m, n, vals, mask, bvals, x0, use_x0) in problem(extreme), cg in any::<bool>()) {
+        let d: Vec<Vec<f64>> = (0..m).map(|r| (0..n).map(|c| vals[r * n + c].unwrap_or(0.0)).collect()).collect();
+        let delta = Csr::from_triplets(m, n, (0..m * n).filter_map(|k| vals[k].map(|v| (k / n, k % n, v))).collect());
+        let bd: Vec<(usize, f64)> = (0..n).filter(|&c| mask[c]).map(|c| (c, bvals[c])).collect();
+        let o = Options { dense_max: if cg { 0 } else { 400 }, max_iter: 200, ..Default::default() };
+        let c = harmonic_extension(&delta, &bd, use_x0.then_some(&x0[..]), &o).unwrap();
+        prop_assert_eq!(c.cert.converged, c.cert.residual_rel <= 1e-10, "{:?}", c.cert);
+        if !c.cert.converged { return Ok(()); }
+        let int: Vec<bool> = mask.iter().map(|b| !b).collect();
+        // (δᵀδv)_I through the sparse products: a structural zero times an overflowed δv is skipped, not NaN
+        let l_i = |v: &[f64]| -> Vec<f64> { delta.mul_t(&delta.mul(v)).into_iter().zip(&int).filter(|p| *p.1).map(|p| p.0).collect() };
+        let pick = |v: &[f64]| -> Vec<f64> { (0..n).filter(|&i| int[i]).map(|i| v[i]).collect() };
+        let xb: Vec<f64> = (0..n).map(|i| if mask[i] { bvals[i] } else { 0.0 }).collect();
+        let (res, s) = (nrm(&l_i(&c.x)), scale(&d, &int, nrm(&l_i(&xb)), nrm(&pick(&c.x)), if use_x0 { nrm(&pick(&x0)) } else { 0.0 }));
+        prop_assert!(s.is_finite() && res <= 1e-10 * s * (1.0 + 1e-9), "converged but ‖(Lx)_I‖ = {} against scale {} ({:?})", res, s, c.cert);
     }
 }

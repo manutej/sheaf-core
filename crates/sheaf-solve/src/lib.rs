@@ -12,7 +12,7 @@
 //! Family `Exact` (ADR-013): a linear solve of the exact energy, not an ordered/interval approximation.
 //! Certificate (certified residual, ADR-008): relative residual ‖L_II x_I + L_IB x_B‖ / max(‖L_IB x_B‖,
 //! ‖L_II‖_bound·max(‖x_I‖, ‖x_start,I‖), tiny), the energy, iteration count, the route taken (dense Cholesky or CG), and
-//! `converged` = residual ≤ tol.
+//! `converged` = residual ≤ tol. A scale that overflowed to +inf certifies nothing: the residual is then NaN, not 0.
 pub use sheaf_cell::num::sparse::Csr;
 use sheaf_cell::num::family::Exact;
 use sheaf_cell::num::krylov::{cg, SolveTol};
@@ -109,7 +109,8 @@ pub fn harmonic_extension(delta: &Csr, boundary: &[(usize, f64)], x0: Option<&[f
     // scale includes the start: with B = ∅ the answer can be ~0 (no sections) while the start was not
     let x_start_i = x0.map_or(0.0, |v| nrm(&interior.iter().map(|&i| v[i]).collect::<Vec<_>>()));
     let scale = nrm(&b).max(lb * nrm(&restrict(&x))).max(lb * x_start_i).max(1e-300);
-    let residual_rel = if ni == 0 { 0.0 } else { res_abs / scale };
+    // finite/inf would be 0: e.g. ‖x_start‖² overflowing made an untouched non-solution `converged` (tests/adversarial.rs)
+    let residual_rel = if ni == 0 { 0.0 } else if scale.is_finite() { res_abs / scale } else { f64::NAN };
     let converged = residual_rel.is_finite() && residual_rel <= o.rtol.max(1e-10);
     let e = energy(delta, &x);
     Ok(HarmonicExtension { x, cert: Certificate { method: Exact, route, residual_rel, residual_abs: res_abs, iters, converged, breakdown, energy: e } })
