@@ -101,7 +101,7 @@ impl ShiftInvert<'_> {
         let mut p = z.clone(); let mut rz = dot(&r, &z); let mut ap = vec![0.0; n]; let mut it = 0;
         while it < self.inner_max && norm(&r) > self.inner_rtol * bn {
             self.op.apply(&p, &mut ap); for i in 0..n { ap[i] += self.sigma * p[i]; }
-            let pap = dot(&p, &ap); if !(pap > 0.0) { break; }
+            let pap = dot(&p, &ap); let advances = pap > 0.0; if !advances { break; }
             let al = rz / pap;
             for i in 0..n { x[i] += al * p[i]; r[i] -= al * ap[i]; }
             for i in 0..n { z[i] = r[i] * self.diag_inv[i]; }
@@ -367,3 +367,47 @@ pub fn spectral_components(dims: &[usize], edges: &[GraphEdge], so: &SpectralOpt
     H0Components { spectral, cut_consistent: cut_consistent && !lower, near_sections, cut_min, cut_max, margin_ratio: margin }
 }
 
+#[cfg(test)]
+mod tests {
+    //! Curvature guard of `ShiftInvert::solve` on a 1x1 system: L = d0ᵀd0 with d0 = [a], right-hand side [b].
+    //! `inner_rtol = -1.0` switches the residual stop off, so the loop is entered whenever b is not NaN, and
+    //! `inner_max = 1` allows one step. The first direction is p = b*dinv with pᵀ(L+σI)p = p*(Lp + σ*p) in f64.
+    //! PCG takes the step iff that is `> 0.0`; zero, a negative value and NaN all stop with x = 0.
+    use super::*;
+    use proptest::prelude::*;
+    use sheaf_cell::num::sparse::Csr;
+
+    fn any_f64() -> impl Strategy<Value = f64> {
+        prop_oneof![any::<u64>().prop_map(f64::from_bits), -1e3f64..1e3, Just(f64::NAN), Just(f64::INFINITY), Just(0.0), Just(-0.0)]
+    }
+    /// `(a, b, sigma, dinv)`: all free; or small integers with sigma = -a*a exactly, so L + σI = 0 while p != 0;
+    /// or b = 2^-k on the identity, so the curvature is 2^-2k, positive and below 1e-300.
+    fn case() -> impl Strategy<Value = (f64, f64, f64, f64)> {
+        let nz = || prop_oneof![-4i32..0, 1i32..5].prop_map(f64::from);
+        prop_oneof![
+            (any_f64(), any_f64(), any_f64(), any_f64()),
+            (nz(), nz(), nz()).prop_map(|(a, b, dinv)| (a, b, -(a * a), dinv)),
+            (500i32..=537).prop_map(|k| (1.0, 2f64.powi(-k), 0.0, 1.0)),
+        ]
+    }
+    fn same(x: f64, y: f64) -> bool { x.to_bits() == y.to_bits() || (x.is_nan() && y.is_nan()) }
+
+    proptest! {
+        #[test]
+        fn shift_invert_first_step_taken_iff_curvature_positive((a, b, sigma, dinv) in case()) {
+            let op = HodgeOp::l0(&Csr::from_triplets(1, 1, vec![(0, 0, a)]));
+            let (known, diag_inv) = (KnownKernel::none(1), [dinv]);
+            let si = ShiftInvert { op: &op, sigma, diag_inv: &diag_inv, known: &known, locked: &[], inner_rtol: -1.0, inner_max: 1, stats: std::sync::Mutex::new((0, 0, 0.0)) };
+            let x = si.solve(&[b]);
+            let p = b * dinv;
+            let mut lp = [0.0];
+            op.apply(&[p], &mut lp);
+            let pap = p * (lp[0] + sigma * p);
+            let advances = !b.is_nan() && pap > 0.0;
+            let want = if advances { 0.0 + ((b * p) / pap) * p } else { 0.0 };
+            prop_assert!(same(x[0], want), "x = {:e}, want {:e} (pap = {:e})", x[0], want, pap);
+            let st = si.stats.lock().unwrap();
+            prop_assert_eq!((st.0, st.1), (1, usize::from(advances)));
+        }
+    }
+}
