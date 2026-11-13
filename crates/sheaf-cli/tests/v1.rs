@@ -1,5 +1,6 @@
 //! v1 pipeline tests (moved from the cohomology spike tests/spectral.rs; bodies unchanged).
 use faer::Side;
+use proptest::prelude::*;
 use sheaf_cohom::spectral::*;
 use sheaf_cli::v1;
 
@@ -131,4 +132,71 @@ fn adversarial_overflowing_entries_refused_not_panicking() {
     let ok = r#"{"format":"frontier-sheaf/v1","nodes":[{"id":"a","dim":1},{"id":"b","dim":1},{"id":"c","dim":1}],"edges":[{"u":0,"v":1,"Fu":[[1e75]],"Fv":[[-1e75]]},{"u":1,"v":2,"Fu":[[1e75]],"Fv":[[1e75]]}],"x":[[1e75],[-1e75],[1e75]]}"#;
     let s = sheaf_cli::v1::parse(ok).unwrap();
     let _ = sheaf_cli::v1::analyze(&s, None);
+}
+
+/// Two equal stalks, one edge, `dense_max: 0` so `spectral::smallest` sees `options.k` raw
+/// (`2 * (k + 1) + known.dim() + 2`), `null_reps: 0` so the run does no null Monte Carlo.
+/// Total stalk dimension is `2 * dim`.
+fn spec_with_k(dim: usize, k: u64) -> String {
+    let zeros = vec!["0"; dim].join(",");
+    format!(r#"{{"format":"frontier-sheaf/v1","nodes":[{{"id":"a","dim":{dim}}},{{"id":"b","dim":{dim}}}],"edges":[{{"u":0,"v":1}}],"w":[[{zeros}]],"options":{{"null_reps":0,"dense_max":0,"k":{k}}}}}"#)
+}
+
+/// `max(k, 1)` when `k` fits in `usize` and `2 * (k + 1) + stalk + 2` does too (`known.dim() <= stalk`).
+fn admitted_k(k: u64, stalk: usize) -> Option<usize> {
+    let k = usize::try_from(k).ok()?.max(1);
+    k.checked_add(1).and_then(|w| w.checked_mul(2)).and_then(|t| t.checked_add(stalk)).and_then(|t| t.checked_add(2)).map(|_| k)
+}
+
+/// Largest `k` with `2 * (k + 1) + stalk + 2 <= usize::MAX`.
+fn max_k_for_stalk(stalk: usize) -> usize { (usize::MAX - stalk - 2) / 2 - 1 }
+
+/// `options.k` at `u64::MAX` or `usize::MAX / 2` used to parse and then panic (`k + 1`, or `2 * (k + 1)`
+/// once `dense_max` is below the component). Those are input errors. Every k whose index arithmetic fits
+/// for that spec's stalk still runs, and a wider stalk refuses a k the narrow one accepts.
+#[test]
+fn options_k_overflow_refused_before_analyze() {
+    for k in [u64::MAX, (usize::MAX / 2) as u64] {
+        let e = v1::parse(&spec_with_k(1, k)).expect_err("overflowing k must be refused");
+        assert!(e.to_string().contains("options.k"), "{e}");
+    }
+    // unchanged normalisation: 0 means "at least one eigenvalue", and a normal k is stored as given
+    let zero = v1::parse(&spec_with_k(1, 0)).unwrap();
+    assert_eq!(zero.opts.k, 1);
+    let _ = v1::analyze(&zero, None);
+    let six = v1::parse(&spec_with_k(1, 6)).unwrap();
+    assert_eq!(six.opts.k, 6);
+    let _ = v1::analyze(&six, None);
+    let max_safe = max_k_for_stalk(2);
+    let s = v1::parse(&spec_with_k(1, max_safe as u64)).unwrap();
+    assert_eq!(s.opts.k, max_safe);
+    let _ = v1::analyze(&s, None);
+    assert!(v1::parse(&spec_with_k(1, (max_safe as u64).checked_add(1).unwrap())).is_err());
+    // same k, stalk 1024: `2 * (k + 1) + 1024 + 2` overflows, so parse refuses before any solve
+    let e = v1::parse(&spec_with_k(512, max_safe as u64)).expect_err("wider stalk must refuse");
+    assert!(e.to_string().contains("options.k"), "{e}");
+    assert_eq!(v1::parse(&spec_with_k(512, 6)).unwrap().opts.k, 6);
+    assert_eq!(v1::parse(&spec_with_k(512, max_k_for_stalk(1024) as u64)).unwrap().opts.k, max_k_for_stalk(1024));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+
+    /// For every u64 `k`, on a stalk-2 spec, `parse` accepts iff `max(k, 1)` satisfies
+    /// `2 * (k + 1) + 2 + 2 <= usize::MAX`, stores that value, and `analyze` returns.
+    #[test]
+    fn prop_options_k_accepted_iff_index_arithmetic_fits(k in any::<u64>()) {
+        const STALK: usize = 2;
+        match (v1::parse(&spec_with_k(1, k)), admitted_k(k, STALK)) {
+            (Ok(s), Some(want)) => {
+                prop_assert_eq!(s.opts.k, want);
+                let w = s.opts.k + 1;
+                let _fits = w * 2 + STALK + 2;
+                let _ = v1::analyze(&s, None);
+            }
+            (Err(e), None) => prop_assert!(e.to_string().contains("options.k"), "{e}"),
+            (Ok(s), None) => prop_assert!(false, "accepted unsafe k {}", s.opts.k),
+            (Err(e), Some(want)) => prop_assert!(false, "rejected safe k {want}: {e}"),
+        }
+    }
 }

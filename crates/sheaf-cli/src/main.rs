@@ -12,7 +12,9 @@ fn main() {
         let val = a.get(i + 1).cloned().unwrap_or_default();
         let bad = |f: &str| -> ! { eprintln!("P_INPUT_01 flag {f}: bad or missing value {val:?}"); std::process::exit(2) };
         match a[i].as_str() {
-            "--out" => out = Some(val), "--k" => spec.opts.k = val.parse().unwrap_or_else(|_| bad("--k")), "--null-reps" => spec.opts.null_reps = val.parse().unwrap_or_else(|_| bad("--null-reps")),
+            "--out" => out = Some(val),
+            "--k" => spec.opts.k = v1::options_k(val.parse().unwrap_or_else(|_| bad("--k")), spec.dims.iter().sum()).unwrap_or_else(|e| { eprintln!("{e}"); std::process::exit(2) }),
+            "--null-reps" => spec.opts.null_reps = val.parse().unwrap_or_else(|_| bad("--null-reps")),
             "--seed" => spec.opts.seed = val.parse().unwrap_or_else(|_| bad("--seed")), "--top" => spec.opts.top = val.parse().unwrap_or_else(|_| bad("--top")),
             "--method" => spec.opts.method = match val.as_str() { "polynomial" => Method::Polynomial, "shift-invert" => Method::ShiftInvert, _ => bad("--method") },
             "--boundary" => {

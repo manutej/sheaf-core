@@ -78,6 +78,17 @@ pub const MAX_MAP_BYTES: usize = 4 << 30;
 /// Largest admitted |entry| in maps, x, w and boundary values (ADR-017 P-NUM-01).
 pub const MAX_ABS_ENTRY: f64 = 1e75;
 
+/// `options.k` stored on a spec with total stalk dimension `stalk` (`0` means one eigenvalue).
+/// Refuses a `k` for which `2 * (k + 1) + stalk + 2` does not fit in `usize`: `spectral::smallest`
+/// evaluates `2 * (k + 1) + known.dim() + 2` with `known.dim() <= stalk`, and the report adds `k + 1`.
+pub fn options_k(k: u64, stalk: usize) -> Result<usize, SpecError> {
+    let k = usize::try_from(k).map_err(|_| SpecError::Field("options.k: exceeds usize".into()))?.max(1);
+    if k.checked_add(1).and_then(|w| w.checked_mul(2)).and_then(|t| t.checked_add(stalk)).and_then(|t| t.checked_add(2)).is_none() {
+        return Err(SpecError::Field(format!("options.k: {k} overflows spectral index arithmetic for stalk dimension {stalk}")));
+    }
+    Ok(k)
+}
+
 pub fn parse(text: &str) -> Result<Spec, SpecError> {
     let v: Value = serde_json::from_str(text).map_err(|e| SpecError::Json(e.to_string()))?;
     if v.get("format").and_then(|f| f.as_str()) != Some("frontier-sheaf/v1") { return Err(SpecError::Field("format must be \"frontier-sheaf/v1\"".into())); }
@@ -90,9 +101,10 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
     }
     // ADR-017 P-RES-01: admission BEFORE any allocation. A 120-byte spec with two nodes of dim 200000 and an edge with
     // omitted maps used to allocate a 200000x200000 identity (320 GB) and abort; dim 2^64-1 wrapped the offsets.
-    if dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)).map_or(true, |t| t > MAX_TOTAL_DIM) {
-        return Err(SpecError::Field(format!("nodes: total stalk dimension exceeds {MAX_TOTAL_DIM}")));
-    }
+    let stalk = match dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)) {
+        Some(t) if t <= MAX_TOTAL_DIM => t,
+        _ => return Err(SpecError::Field(format!("nodes: total stalk dimension exceeds {MAX_TOTAL_DIM}"))),
+    };
     let index: std::collections::HashMap<&str, usize> = ids.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
     if index.len() != ids.len() { return Err(SpecError::Field("nodes: duplicate id".into())); }
     let endpoint = |x: Option<&Value>, j: usize, w: &str| -> Result<usize, SpecError> {
@@ -128,7 +140,7 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
     if x.is_none() && w.is_none() { return Err(SpecError::Field("need x (node data) or w (edge cochain)".into())); }
     let mut opts = Options::default();
     if let Some(o) = v.get("options") {
-        if let Some(k) = o.get("k").and_then(|x| x.as_u64()) { opts.k = (k as usize).max(1); }
+        if let Some(k) = o.get("k").and_then(|x| x.as_u64()) { opts.k = options_k(k, stalk)?; }
         if let Some(k) = o.get("null_reps").and_then(|x| x.as_u64()) { opts.null_reps = k as usize; }
         if let Some(k) = o.get("seed").and_then(|x| x.as_u64()) { opts.seed = k; }
         if let Some(k) = o.get("top").and_then(|x| x.as_u64()) { opts.top = k as usize; }
