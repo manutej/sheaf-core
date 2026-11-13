@@ -1,7 +1,8 @@
 //! Certificate soundness on arbitrary δ (not only sheaf coboundaries): the certificate fields are the documented
 //! functions of the RETURNED x, recomputed here from a dense copy of δ, and `converged` is never claimed against a
 //! scale that is not a finite number. Entries span 2^±20 (the ADR-017 P-NUM-05 regime), interiors may be singular.
-//! Last test: which x comes back when the interior is singular by construction (an unpinned dof, a duplicated column).
+//! Third test: which x comes back when the interior is singular by construction (an unpinned dof, a duplicated column).
+//! Last test: no absolute tolerance, a change of units (δ·2^k, data·2^j) changes the answer by exactly those units.
 use proptest::prelude::*;
 use sheaf_solve::{harmonic_extension, Csr, Options, Route};
 
@@ -111,5 +112,27 @@ proptest! {
         prop_assert_eq!(h.cert.route, Route::Cg, "a singular L_II was solved by Cholesky: {:?}", h.cert);
         prop_assert_eq!(h.x[z], if use_x0 { x0[z] } else { 0.0 }, "the unpinned dof moved ({:?})", h.cert);
         prop_assert_eq!(h.x[s].to_bits(), h.x[t].to_bits(), "twin columns: x_s = {}, x_t = {} ({:?})", h.x[s], h.x[t], h.cert);
+    }
+
+    /// No absolute tolerance anywhere: a change of units changes only the units. δ·2^k (edge units) and boundary values
+    /// and start ·2^j (stalk units) are exact in f64 and commute with every rounded +, −, ×, ÷ and (even powers) sqrt,
+    /// so both routes must take the same decisions and return x·2^j, the same residual_rel and verdict, bit for bit.
+    #[test]
+    fn a_change_of_units_changes_only_the_units(
+        (m, n, vals, mask, bvals, x0, use_x0) in problem(scaled), cg in any::<bool>(), k in -30i32..=30, j in -30i32..=30,
+    ) {
+        let (c, a) = (2f64.powi(k), 2f64.powi(j));
+        let delta = |s: f64| Csr::from_triplets(m, n, (0..m * n).filter_map(|i| vals[i].map(|v| (i / n, i % n, s * v))).collect());
+        let bd = |s: f64| -> Vec<(usize, f64)> { (0..n).filter(|&i| mask[i]).map(|i| (i, s * bvals[i])).collect() };
+        let x0a: Vec<f64> = x0.iter().map(|v| a * v).collect();
+        let o = Options { dense_max: if cg { 0 } else { 400 }, max_iter: 200, ..Default::default() };
+        let h = harmonic_extension(&delta(1.0), &bd(1.0), use_x0.then_some(&x0[..]), &o).unwrap();
+        let g = harmonic_extension(&delta(c), &bd(a), use_x0.then_some(&x0a[..]), &o).unwrap();
+        let (p, q) = (&h.cert, &g.cert);
+        prop_assert_eq!((q.route, q.iters, q.breakdown, q.converged), (p.route, p.iters, p.breakdown, p.converged), "{:?} vs {:?}", q, p);
+        for i in 0..n { prop_assert_eq!(g.x[i].to_bits(), (a * h.x[i]).to_bits(), "x[{}]: {:e} vs 2^{}·{:e}", i, g.x[i], j, h.x[i]); }
+        prop_assert_eq!(q.residual_rel.to_bits(), p.residual_rel.to_bits(), "residual_rel {:e} vs {:e}", q.residual_rel, p.residual_rel);
+        prop_assert_eq!(q.residual_abs.to_bits(), (c * c * a * p.residual_abs).to_bits(), "residual_abs {:e} vs {:e}", q.residual_abs, p.residual_abs);
+        prop_assert_eq!(q.energy.to_bits(), (c * c * a * a * p.energy).to_bits(), "energy {:e} vs {:e}", q.energy, p.energy);
     }
 }
