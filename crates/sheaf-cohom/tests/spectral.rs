@@ -60,6 +60,27 @@ fn graph_sheaf(n: usize, extra: &[(usize, usize)], d: usize, seed: u64, random_m
 }
 
 #[test]
+fn small_k_inside_historical_margin_stays_dense() {
+    // n = 80, k = 6, dense_max = 0: 80 <= 2 * 64 + 2, so the dense fallback stays.
+    let s = graph_sheaf(80, &[], 1, 1, false, false);
+    let op = op_for(&s, 0);
+    assert_eq!(op.n, 80);
+    let sp = smallest(&op, &KnownKernel::none(op.n), &SpectralOpts { k: 6, dense_max: 0, ..Default::default() });
+    assert_eq!(sp.method, "dense-evd");
+}
+
+#[test]
+fn large_k_above_dense_max_stays_on_lanczos() {
+    // Same n with k = 64 used to densify (80 <= 2 * 65 + 2) even though dense_max is 0.
+    let s = graph_sheaf(80, &[], 1, 1, false, false);
+    let op = op_for(&s, 0);
+    let o = SpectralOpts { k: 64, dense_max: 0, method: Method::Polynomial, max_rounds: 1, max_restarts: 1, ..Default::default() };
+    let sp = smallest(&op, &KnownKernel::none(op.n), &o);
+    assert!(sp.method.starts_with("lanczos"), "{}", sp.method);
+    assert!(sp.pairs.len() <= (op.n - 1) / 3, "pairs {} nev cap {}", sp.pairs.len(), (op.n - 1) / 3);
+}
+
+#[test]
 fn lanczos_matches_dense_on_larger_fixtures() {
     // (name, sheaf, use known kernel)
     let cases = vec![

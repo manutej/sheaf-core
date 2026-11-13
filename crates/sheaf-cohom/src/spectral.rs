@@ -215,11 +215,36 @@ pub fn smallest_dense(op: &HodgeOp, known: &KnownKernel, k: usize, h0: H0Policy)
     finish(op, known, pairs, k, 0.0, "dense-evd", 1, true, h0)
 }
 
-/// Matrix-free smallest k+1 eigenpairs (see module doc). Falls back to dense when n <= dense_max
-/// (faer's restarted Lanczos needs n > max_dim >= 64).
+/// faer 0.24 panics in restarted Lanczos unless `max_dim < n`, and `max_dim` is at least 64.
+const FAER_MAX_DIM_FLOOR: usize = 64;
+
+/// Dense EVD when the caller asked for it (`n <= dense_max`), when Lanczos cannot start
+/// (`n <= 64`), or when `k + 1 <= 64` and `n` is still inside the historical margin
+/// `2 * 64 + known_dim + 2`. A larger `k` does not select dense while `n > dense_max`.
+fn chooses_dense(n: usize, k: usize, dense_max: usize, known_dim: usize) -> bool {
+    if n <= dense_max || n <= FAER_MAX_DIM_FLOOR { return true; }
+    k.saturating_add(1) <= FAER_MAX_DIM_FLOOR && n <= known_dim.saturating_add(2 * FAER_MAX_DIM_FLOOR + 2)
+}
+
+/// Eigenpairs to ask of Lanczos. Precondition: `n > 64` (otherwise `chooses_dense`).
+/// `0` means the known kernel already fills the space, so the caller must not call faer.
+/// Otherwise `1 <= nev <= min(k + 1, n - known_dim, (n - 1) / 3)`, which keeps
+/// `max(3 * nev, 64) < n` (the `max_dim` this driver passes to faer).
+fn lanczos_nev(n: usize, k: usize, known_dim: usize) -> usize {
+    let free = n.saturating_sub(known_dim);
+    if free == 0 { return 0; }
+    k.saturating_add(1).min((n - 1) / 3).min(free)
+}
+
+/// Matrix-free smallest eigenpairs (see module doc). See `chooses_dense` for the dense fallback.
+/// When `n > dense_max` and `k + 1 > 64`, `k` is clamped by `lanczos_nev` and Lanczos runs.
 pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral {
-    let n = op.n; let want = o.k + 1;
-    if n <= o.dense_max || n <= 2 * want.max(64) + known.dim() + 2 { return smallest_dense(op, known, o.k, o.h0); }
+    let n = op.n;
+    let known_dim = known.dim();
+    if chooses_dense(n, o.k, o.dense_max, known_dim) { return smallest_dense(op, known, o.k, o.h0); }
+    let want = lanczos_nev(n, o.k, known_dim);
+    let name = if o.method == Method::ShiftInvert { "lanczos((L+sigma I)^-1 via Jacobi-PCG, deflated, lock+restart, rayleigh-ritz)" } else { "lanczos(cI-L, deflated, lock+restart, rayleigh-ritz)" };
+    if want == 0 { return finish(op, known, vec![], o.k, 0.0, name, 0, true, o.h0); }
     let bound = op.norm_bound();
     let c = 1.01 * bound + 1e-12;
     let sigma = o.sigma_rel * bound.max(1.0);
@@ -278,7 +303,6 @@ pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral
         let nu = norm(&u); u.iter_mut().for_each(|x| *x /= nu);
         (evd.S().column_vector()[j], u)
     }).collect();
-    let name = if o.method == Method::ShiftInvert { "lanczos((L+sigma I)^-1 via Jacobi-PCG, deflated, lock+restart, rayleigh-ritz)" } else { "lanczos(cI-L, deflated, lock+restart, rayleigh-ritz)" };
     let mut sp = finish(op, known, pairs, o.k, c, name, rounds, converged, o.h0);
     if o.method == Method::ShiftInvert { sp.inner = Some(inner_tot); sp.sigma = sigma; if inner_tot.2 > 1e-10 { sp.converged = false; } } // Grok v1 #7
     sp
@@ -362,5 +386,75 @@ pub fn spectral_components(dims: &[usize], edges: &[GraphEdge], so: &SpectralOpt
     let spectral = Spectral { method, n, known_kernel_dim: known_dim, pairs, vectors, c_shift: 0.0, lambda_max_bound: bound, zero_tol: cut_max, found_zero, rounds, inner, sigma: so.sigma_rel * bound.max(1.0),
         converged, h0_lower_bound_only: lower };
     H0Components { spectral, cut_consistent: cut_consistent && !lower, near_sections, cut_min, cut_max, margin_ratio: margin }
+}
+
+#[cfg(test)]
+mod dense_gate {
+    use super::{chooses_dense, lanczos_nev, FAER_MAX_DIM_FLOOR};
+    use proptest::prelude::*;
+
+    /// The pre-280f35f gate, in u128 so a large `k` cannot wrap the comparison.
+    fn historical(n: usize, k: usize, dense_max: usize, known_dim: usize) -> bool {
+        let want = (k as u128).saturating_add(1);
+        let rhs = 2 * want.max(FAER_MAX_DIM_FLOOR as u128) + (known_dim as u128) + 2;
+        (n as u128) <= (dense_max as u128) || (n as u128) <= rhs
+    }
+
+    #[test]
+    fn admitted_k_near_component_size_does_not_choose_dense() {
+        // Review 280f35f: ~200k dofs and options.k = 200_000 used to take an n×n dense EVD
+        // even with dense_max = 1500, because `n <= 2 * (k + 1) + known_dim + 2`.
+        let (n, k, dense_max) = (200_000usize, 200_000usize, 1_500usize);
+        assert!(historical(n, k, dense_max, 0), "old gate would densify");
+        assert!(!chooses_dense(n, k, dense_max, 0));
+        assert!(!chooses_dense(n, k, 0, 1));
+        let nev = lanczos_nev(n, k, 0);
+        assert_eq!(nev, (n - 1) / 3);
+        assert!((3 * nev).max(FAER_MAX_DIM_FLOOR) < n);
+        // n <= 64 stays dense for any k (faer cannot start). Stalk-2 analyze uses this.
+        assert!(chooses_dense(2, usize::MAX, 0, 0));
+        // k + 1 <= 64 keeps the historical margin, including on a component Lanczos could fit.
+        assert!(chooses_dense(80, 6, 0, 0));
+        assert!(historical(80, 6, 0, 0));
+        assert!(!chooses_dense(80, 64, 0, 0));
+        assert!(historical(80, 64, 0, 0));
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(256))]
+
+        /// For every n, k, dense_max, known_dim:
+        /// if k + 1 <= 64, the dense decision equals the historical gate;
+        /// if k >= 64 and n > dense_max and n > 64, the decision is Lanczos.
+        /// For every n > 64, lanczos_nev is 0 iff the known kernel fills the space,
+        /// and otherwise max(3 * nev, 64) < n, nev <= k + 1, and nev <= n - known_dim.
+        #[test]
+        fn prop_large_k_cannot_force_dense_past_dense_max(
+            n in 0usize..50_000,
+            k in prop_oneof![0usize..128, 1_000usize..100_000, Just(usize::MAX)],
+            dense_max in prop_oneof![Just(0usize), Just(1_500usize), 0usize..20_000],
+            known_dim in prop_oneof![0usize..128, Just(usize::MAX)],
+        ) {
+            let dense = chooses_dense(n, k, dense_max, known_dim);
+            if k.saturating_add(1) <= FAER_MAX_DIM_FLOOR {
+                prop_assert_eq!(dense, historical(n, k, dense_max, known_dim));
+            } else if n > dense_max && n > FAER_MAX_DIM_FLOOR {
+                prop_assert!(!dense, "n={n} k={k} dense_max={dense_max} known={known_dim}");
+            } else {
+                prop_assert_eq!(dense, n <= dense_max || n <= FAER_MAX_DIM_FLOOR);
+            }
+            prop_assume!(n > FAER_MAX_DIM_FLOOR);
+            let nev = lanczos_nev(n, k, known_dim);
+            let free = n.saturating_sub(known_dim);
+            if free == 0 {
+                prop_assert_eq!(nev, 0);
+            } else {
+                prop_assert!(nev >= 1 && nev <= free && nev <= k.saturating_add(1));
+                prop_assert!(nev <= (n - 1) / 3);
+                prop_assert!((3 * nev).max(FAER_MAX_DIM_FLOOR) < n);
+                prop_assert!(2 * nev < n);
+            }
+        }
+    }
 }
 
