@@ -72,12 +72,16 @@ fn small_k_inside_historical_margin_stays_dense() {
 #[test]
 fn large_k_above_dense_max_stays_on_lanczos() {
     // Same n with k = 64 used to densify (80 <= 2 * 65 + 2) even though dense_max is 0.
+    // One round and a full restart budget: faer finishes the capped nev ((n-1)/3 = 26 < 65).
+    // Review ae80472: that short spectrum must not come back with converged = true.
     let s = graph_sheaf(80, &[], 1, 1, false, false);
     let op = op_for(&s, 0);
-    let o = SpectralOpts { k: 64, dense_max: 0, method: Method::Polynomial, max_rounds: 1, max_restarts: 1, ..Default::default() };
+    let o = SpectralOpts { k: 64, dense_max: 0, method: Method::Polynomial, max_rounds: 1, max_restarts: 2000, ..Default::default() };
     let sp = smallest(&op, &KnownKernel::none(op.n), &o);
     assert!(sp.method.starts_with("lanczos"), "{}", sp.method);
     assert!(sp.pairs.len() <= (op.n - 1) / 3, "pairs {} nev cap {}", sp.pairs.len(), (op.n - 1) / 3);
+    assert!(sp.pairs.len() < o.k + 1, "pairs {} request {}", sp.pairs.len(), o.k + 1);
+    assert!(!sp.converged, "capped lanczos reported converged (pairs {})", sp.pairs.len());
 }
 
 #[test]

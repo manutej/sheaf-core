@@ -148,7 +148,8 @@ pub struct Spectral {
     pub n: usize,
     /// dim of the deflated known kernel (exact component-constant sections)
     pub known_kernel_dim: usize,
-    /// the k+1 smallest eigenpairs of L on the complement of the known kernel, ascending
+    /// smallest eigenpairs of L on the complement of the known kernel, ascending, at most k+1.
+    /// Not a promise that all k+1 were found: each Lanczos call is capped by `lanczos_nev`.
     pub pairs: Vec<EigPair>,
     pub vectors: Vec<Vec<f64>>,
     pub c_shift: f64,
@@ -160,7 +161,10 @@ pub struct Spectral {
     /// shift-invert only: (inner solves, total inner CG iterations, worst inner relative residual)
     pub inner: Option<(usize, usize, f64)>,
     pub sigma: f64,
-    /// true if every one of the k+1 requested pairs converged (faer reported) in the last round
+    /// true only when every one of the k+1 requested pairs was computed and converged
+    /// (faer reported) in the last round. False when a Lanczos search ran (`lanczos_nev` > 0)
+    /// but was asked for fewer than k+1 pairs, even if that shorter call converged.
+    /// An empty complement (`lanczos_nev` = 0) stays true: nothing remained to find.
     pub converged: bool,
     /// true if all k+1 computed pairs were <= zero_tol: H0 is then only a LOWER bound
     pub h0_lower_bound_only: bool,
@@ -236,8 +240,16 @@ fn lanczos_nev(n: usize, k: usize, known_dim: usize) -> usize {
     k.saturating_add(1).min((n - 1) / 3).min(free)
 }
 
+/// True when `want` includes every one of the k+1 requested pairs.
+/// Widened so `k = usize::MAX` does not wrap `k + 1` to 0.
+/// For integers, `want > k` is the same test as `want >= k + 1`.
+fn covers_requested(want: usize, k: usize) -> bool {
+    (want as u128) > (k as u128)
+}
+
 /// Matrix-free smallest eigenpairs (see module doc). See `chooses_dense` for the dense fallback.
 /// When `n > dense_max` and `k + 1 > 64`, `k` is clamped by `lanczos_nev` and Lanczos runs.
+/// A clamp below k+1 clears `converged`: the restart target is that cap, not k+1.
 pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral {
     let n = op.n;
     let known_dim = known.dim();
@@ -304,6 +316,8 @@ pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral
         (evd.S().column_vector()[j], u)
     }).collect();
     let mut sp = finish(op, known, pairs, o.k, c, name, rounds, converged, o.h0);
+    // Review ae80472: `nc >= nev` was measured against the capped nev, so a short spectrum looked complete.
+    if !covers_requested(want, o.k) { sp.converged = false; }
     if o.method == Method::ShiftInvert { sp.inner = Some(inner_tot); sp.sigma = sigma; if inner_tot.2 > 1e-10 { sp.converged = false; } } // Grok v1 #7
     sp
 }
@@ -390,7 +404,7 @@ pub fn spectral_components(dims: &[usize], edges: &[GraphEdge], so: &SpectralOpt
 
 #[cfg(test)]
 mod dense_gate {
-    use super::{chooses_dense, lanczos_nev, FAER_MAX_DIM_FLOOR};
+    use super::{chooses_dense, covers_requested, lanczos_nev, FAER_MAX_DIM_FLOOR};
     use proptest::prelude::*;
 
     /// The pre-280f35f gate, in u128 so a large `k` cannot wrap the comparison.
@@ -418,6 +432,24 @@ mod dense_gate {
         assert!(historical(80, 6, 0, 0));
         assert!(!chooses_dense(80, 64, 0, 0));
         assert!(historical(80, 64, 0, 0));
+        // n = 80, k = 64: the faer cap is (n-1)/3 = 26, short of the 65 requested pairs.
+        assert_eq!(lanczos_nev(80, 64, 0), (80 - 1) / 3);
+        assert!(!covers_requested(lanczos_nev(80, 64, 0), 64));
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(256))]
+
+        /// ∀ want, k: covers_requested(want, k) iff want >= k+1 in the integers
+        /// (the sum is u128, so k = usize::MAX does not wrap to a full request).
+        #[test]
+        fn prop_covers_requested_is_full_k_plus_one(
+            want in prop_oneof![any::<usize>(), Just(0usize), Just(usize::MAX)],
+            k in prop_oneof![any::<usize>(), Just(0usize), Just(64usize), Just(usize::MAX)],
+        ) {
+            let full = (k as u128) + 1;
+            prop_assert_eq!(covers_requested(want, k), (want as u128) >= full);
+        }
     }
 
     proptest! {
