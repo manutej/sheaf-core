@@ -20,7 +20,8 @@ pub fn graph_hodge_cg_cert(d0: &Csr, w: &[f64], rtol: f64, max_iter: usize, cert
     while it < max_iter && rr.sqrt() > rtol * bn.max(1e-300) {
         let ap = d0.mul_t(&d0.mul(&p));
         let pap = dot(&p, &ap);
-        if !(pap > 1e-14 * dot(&p, &p)) { breakdown = true; break; } // direction (numerically) in ker L0
+        let advances = pap > 1e-14 * dot(&p, &p);
+        if !advances { breakdown = true; break; } // direction (numerically) in ker L0
         let alpha = rr / pap;
         for i in 0..x.len() { x[i] += alpha * p[i]; r[i] -= alpha * ap[i]; }
         let rr2 = dot(&r, &r);
