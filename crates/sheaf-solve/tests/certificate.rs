@@ -1,8 +1,9 @@
 //! Certificate soundness on arbitrary δ (not only sheaf coboundaries): the certificate fields are the documented
 //! functions of the RETURNED x, recomputed here from a dense copy of δ, and `converged` is never claimed against a
 //! scale that is not a finite number. Entries span 2^±20 (the ADR-017 P-NUM-05 regime), interiors may be singular.
+//! Last test: which x comes back when the interior is singular by construction (an unpinned dof, a duplicated column).
 use proptest::prelude::*;
-use sheaf_solve::{harmonic_extension, Csr, Options};
+use sheaf_solve::{harmonic_extension, Csr, Options, Route};
 
 fn nrm(v: &[f64]) -> f64 { v.iter().map(|a| a * a).sum::<f64>().sqrt() }
 /// (δᵀδx restricted to `keep`), with δ dense row-major; same summation order as `Csr::mul` / `Csr::mul_t`.
@@ -87,5 +88,28 @@ proptest! {
         // no entry of (Lx)_I exceeds the reported norm or the bound: |entry| is exact, a square below 2^-1074 is 0
         let top = l_i(&c.x).into_iter().fold(0.0f64, |a, v| a.max(v.abs()));
         prop_assert!(top <= c.cert.residual_abs && top <= 1e-10 * s * (1.0 + 1e-9), "converged but an entry of (Lx)_I is {:e} against scale {:e} ({:?})", top, s, c.cert);
+    }
+
+    /// A non-unique extension is the start's component in ker L_II plus the minimum-norm solution (module docs), here
+    /// on the two kernel vectors that can be built by hand. δ gets two more interior columns: `t`, a copy of interior
+    /// column `s` with the same start (e_s − e_t ∈ ker L_II), and `z`, with no entries (e_z ∈ ker L_II). Cholesky must
+    /// refuse this L_II on the default route, x_z must come back untouched and x_s, x_t equal bit for bit.
+    #[test]
+    fn unpinned_dof_keeps_its_start_and_twin_columns_stay_equal(
+        (m, n, vals, mut mask, bvals, mut x0, use_x0) in problem(scaled), cg in any::<bool>(), pick in 0usize..5,
+    ) {
+        let (s, t, z) = (pick % n, n, n + 1);
+        mask[s] = false;
+        let mut trip: Vec<(usize, usize, f64)> = (0..m * n).filter_map(|k| vals[k].map(|v| (k / n, k % n, v))).collect();
+        let twin: Vec<_> = trip.iter().filter(|e| e.1 == s).map(|e| (e.0, t, e.2)).collect();
+        trip.extend(twin);
+        let delta = Csr::from_triplets(m, n + 2, trip);
+        let bd: Vec<(usize, f64)> = (0..n).filter(|&c| mask[c]).map(|c| (c, bvals[c])).collect();
+        x0.extend([x0[s], bvals[s]]);   // starts of t (= start of s) and of z (any value: s is interior, bvals[s] is free)
+        let o = Options { dense_max: if cg { 0 } else { 400 }, max_iter: 200, ..Default::default() };
+        let h = harmonic_extension(&delta, &bd, use_x0.then_some(&x0[..]), &o).unwrap();
+        prop_assert_eq!(h.cert.route, Route::Cg, "a singular L_II was solved by Cholesky: {:?}", h.cert);
+        prop_assert_eq!(h.x[z], if use_x0 { x0[z] } else { 0.0 }, "the unpinned dof moved ({:?})", h.cert);
+        prop_assert_eq!(h.x[s].to_bits(), h.x[t].to_bits(), "twin columns: x_s = {}, x_t = {} ({:?})", h.x[s], h.x[t], h.cert);
     }
 }
