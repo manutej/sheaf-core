@@ -78,15 +78,15 @@ pub const MAX_MAP_BYTES: usize = 4 << 30;
 /// Largest admitted |entry| in maps, x, w and boundary values (ADR-017 P-NUM-01).
 pub const MAX_ABS_ENTRY: f64 = 1e75;
 
-/// `options.k` stored on a spec with total stalk dimension `stalk` (`0` means one eigenvalue).
-/// Refuses a `k` for which `2 * (k + 1) + stalk + 2` does not fit in `usize`: `spectral::smallest`
-/// evaluates `2 * (k + 1) + known.dim() + 2` with `known.dim() <= stalk`, and the report adds `k + 1`.
-pub fn options_k(k: u64, stalk: usize) -> Result<usize, SpecError> {
-    let k = usize::try_from(k).map_err(|_| SpecError::Field("options.k: exceeds usize".into()))?.max(1);
-    if k.checked_add(1).and_then(|w| w.checked_mul(2)).and_then(|t| t.checked_add(stalk)).and_then(|t| t.checked_add(2)).is_none() {
-        return Err(SpecError::Field(format!("options.k: {k} overflows spectral index arithmetic for stalk dimension {stalk}")));
+/// `options.k` (`0` means one eigenvalue). Refuses `k > MAX_TOTAL_DIM`.
+/// Stalk dimension is already at most that cap, so on 64-bit `k + 1`,
+/// `2 * (k + 1) + known.dim() + 2`, and the `o.k *= 4` retry all fit in `usize`.
+pub fn options_k(k: u64) -> Result<usize, SpecError> {
+    if k > MAX_TOTAL_DIM as u64 {
+        return Err(SpecError::Field(format!("options.k exceeds {MAX_TOTAL_DIM}")));
     }
-    Ok(k)
+    // `k <= MAX_TOTAL_DIM` fits in `usize`; a failed conversion is the same refusal.
+    Ok(usize::try_from(k).map_err(|_| SpecError::Field(format!("options.k exceeds {MAX_TOTAL_DIM}")))?.max(1))
 }
 
 pub fn parse(text: &str) -> Result<Spec, SpecError> {
@@ -101,8 +101,8 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
     }
     // ADR-017 P-RES-01: admission BEFORE any allocation. A 120-byte spec with two nodes of dim 200000 and an edge with
     // omitted maps used to allocate a 200000x200000 identity (320 GB) and abort; dim 2^64-1 wrapped the offsets.
-    let stalk = match dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)) {
-        Some(t) if t <= MAX_TOTAL_DIM => t,
+    match dims.iter().try_fold(0usize, |a, &d| a.checked_add(d)) {
+        Some(t) if t <= MAX_TOTAL_DIM => {}
         _ => return Err(SpecError::Field(format!("nodes: total stalk dimension exceeds {MAX_TOTAL_DIM}"))),
     };
     let index: std::collections::HashMap<&str, usize> = ids.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
@@ -140,7 +140,7 @@ pub fn parse(text: &str) -> Result<Spec, SpecError> {
     if x.is_none() && w.is_none() { return Err(SpecError::Field("need x (node data) or w (edge cochain)".into())); }
     let mut opts = Options::default();
     if let Some(o) = v.get("options") {
-        if let Some(k) = o.get("k").and_then(|x| x.as_u64()) { opts.k = options_k(k, stalk)?; }
+        if let Some(k) = o.get("k").and_then(|x| x.as_u64()) { opts.k = options_k(k)?; }
         if let Some(k) = o.get("null_reps").and_then(|x| x.as_u64()) { opts.null_reps = k as usize; }
         if let Some(k) = o.get("seed").and_then(|x| x.as_u64()) { opts.seed = k; }
         if let Some(k) = o.get("top").and_then(|x| x.as_u64()) { opts.top = k as usize; }

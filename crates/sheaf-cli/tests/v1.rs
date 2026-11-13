@@ -134,69 +134,62 @@ fn adversarial_overflowing_entries_refused_not_panicking() {
     let _ = sheaf_cli::v1::analyze(&s, None);
 }
 
-/// Two equal stalks, one edge, `dense_max: 0` so `spectral::smallest` sees `options.k` raw
-/// (`2 * (k + 1) + known.dim() + 2`), `null_reps: 0` so the run does no null Monte Carlo.
-/// Total stalk dimension is `2 * dim`.
+/// Two equal stalks, one edge, `dense_max: 0`, `null_reps: 0`. Total stalk dimension is `2 * dim`.
 fn spec_with_k(dim: usize, k: u64) -> String {
     let zeros = vec!["0"; dim].join(",");
     format!(r#"{{"format":"frontier-sheaf/v1","nodes":[{{"id":"a","dim":{dim}}},{{"id":"b","dim":{dim}}}],"edges":[{{"u":0,"v":1}}],"w":[[{zeros}]],"options":{{"null_reps":0,"dense_max":0,"k":{k}}}}}"#)
 }
 
-/// `max(k, 1)` when `k` fits in `usize` and `2 * (k + 1) + stalk + 2` does too (`known.dim() <= stalk`).
-fn admitted_k(k: u64, stalk: usize) -> Option<usize> {
-    let k = usize::try_from(k).ok()?.max(1);
-    k.checked_add(1).and_then(|w| w.checked_mul(2)).and_then(|t| t.checked_add(stalk)).and_then(|t| t.checked_add(2)).map(|_| k)
-}
+/// Documented admission bound for `options.k`: the same cap as total stalk dimension.
+const B: u64 = v1::MAX_TOTAL_DIM as u64;
 
-/// Largest `k` with `2 * (k + 1) + stalk + 2 <= usize::MAX`.
-fn max_k_for_stalk(stalk: usize) -> usize { (usize::MAX - stalk - 2) / 2 - 1 }
-
-/// `options.k` at `u64::MAX` or `usize::MAX / 2` used to parse and then panic (`k + 1`, or `2 * (k + 1)`
-/// once `dense_max` is below the component). Those are input errors. Every k whose index arithmetic fits
-/// for that spec's stalk still runs, and a wider stalk refuses a k the narrow one accepts.
+/// `k > MAX_TOTAL_DIM` is an input error (values in `(2^31, usize::MAX/2]` used to be accepted).
+/// `0` is stored as one eigenvalue. The bound does not depend on stalk dimension.
 #[test]
-fn options_k_overflow_refused_before_analyze() {
-    for k in [u64::MAX, (usize::MAX / 2) as u64] {
-        let e = v1::parse(&spec_with_k(1, k)).expect_err("overflowing k must be refused");
+fn options_k_above_max_total_dim_refused() {
+    for k in [u64::MAX, (usize::MAX / 2) as u64, B + 1] {
+        let e = v1::options_k(k).expect_err("k above MAX_TOTAL_DIM");
+        assert!(e.to_string().contains("options.k") && e.to_string().contains(&B.to_string()), "{e}");
+        let e = v1::parse(&spec_with_k(1, k)).expect_err("parse must refuse the same k");
         assert!(e.to_string().contains("options.k"), "{e}");
     }
-    // unchanged normalisation: 0 means "at least one eigenvalue", and a normal k is stored as given
+    assert_eq!(v1::options_k(0).unwrap(), 1);
+    assert_eq!(v1::options_k(6).unwrap(), 6);
+    assert_eq!(v1::options_k(B).unwrap(), v1::MAX_TOTAL_DIM);
     let zero = v1::parse(&spec_with_k(1, 0)).unwrap();
     assert_eq!(zero.opts.k, 1);
     let _ = v1::analyze(&zero, None);
     let six = v1::parse(&spec_with_k(1, 6)).unwrap();
     assert_eq!(six.opts.k, 6);
     let _ = v1::analyze(&six, None);
-    let max_safe = max_k_for_stalk(2);
-    let s = v1::parse(&spec_with_k(1, max_safe as u64)).unwrap();
-    assert_eq!(s.opts.k, max_safe);
-    let _ = v1::analyze(&s, None);
-    assert!(v1::parse(&spec_with_k(1, (max_safe as u64).checked_add(1).unwrap())).is_err());
-    // same k, stalk 1024: `2 * (k + 1) + 1024 + 2` overflows, so parse refuses before any solve
-    let e = v1::parse(&spec_with_k(512, max_safe as u64)).expect_err("wider stalk must refuse");
-    assert!(e.to_string().contains("options.k"), "{e}");
+    let at = v1::parse(&spec_with_k(1, B)).unwrap();
+    assert_eq!(at.opts.k, v1::MAX_TOTAL_DIM);
+    let _ = v1::analyze(&at, None);
+    // stalk 1024 does not tighten or loosen the same bound
     assert_eq!(v1::parse(&spec_with_k(512, 6)).unwrap().opts.k, 6);
-    assert_eq!(v1::parse(&spec_with_k(512, max_k_for_stalk(1024) as u64)).unwrap().opts.k, max_k_for_stalk(1024));
+    assert_eq!(v1::parse(&spec_with_k(512, B)).unwrap().opts.k, v1::MAX_TOTAL_DIM);
+    let e = v1::parse(&spec_with_k(512, B + 1)).expect_err("above the bound");
+    assert!(e.to_string().contains("options.k"), "{e}");
 }
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
 
-    /// For every u64 `k`, on a stalk-2 spec, `parse` accepts iff `max(k, 1)` satisfies
-    /// `2 * (k + 1) + 2 + 2 <= usize::MAX`, stores that value, and `analyze` returns.
+    /// For a sampled `k` (small values, the five integers around `B`, and arbitrary `u64`):
+    /// accepted means `k <= B`, `opts.k == max(k, 1)`, and `analyze` returns;
+    /// rejected means `k > B` and the error names `options.k`.
     #[test]
-    fn prop_options_k_accepted_iff_index_arithmetic_fits(k in any::<u64>()) {
-        const STALK: usize = 2;
-        match (v1::parse(&spec_with_k(1, k)), admitted_k(k, STALK)) {
-            (Ok(s), Some(want)) => {
-                prop_assert_eq!(s.opts.k, want);
-                let w = s.opts.k + 1;
-                let _fits = w * 2 + STALK + 2;
+    fn prop_options_k_within_max_total_dim(k in prop_oneof![0..64u64, (B - 2)..=(B + 2), any::<u64>()]) {
+        match v1::parse(&spec_with_k(1, k)) {
+            Ok(s) => {
+                prop_assert!(k <= B, "accepted k {k} above {B}");
+                prop_assert_eq!(s.opts.k, usize::try_from(k).unwrap().max(1));
                 let _ = v1::analyze(&s, None);
             }
-            (Err(e), None) => prop_assert!(e.to_string().contains("options.k"), "{e}"),
-            (Ok(s), None) => prop_assert!(false, "accepted unsafe k {}", s.opts.k),
-            (Err(e), Some(want)) => prop_assert!(false, "rejected safe k {want}: {e}"),
+            Err(e) => {
+                prop_assert!(k > B, "rejected k {k} at or below {B}: {e}");
+                prop_assert!(e.to_string().contains("options.k"), "{e}");
+            }
         }
     }
 }
