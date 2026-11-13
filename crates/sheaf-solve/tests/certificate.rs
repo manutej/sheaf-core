@@ -84,5 +84,8 @@ proptest! {
         let xb: Vec<f64> = (0..n).map(|i| if mask[i] { bvals[i] } else { 0.0 }).collect();
         let (res, s) = (nrm(&l_i(&c.x)), scale(&d, &int, nrm(&l_i(&xb)), nrm(&pick(&c.x)), if use_x0 { nrm(&pick(&x0)) } else { 0.0 }));
         prop_assert!(s.is_finite() && res <= 1e-10 * s * (1.0 + 1e-9), "converged but ‖(Lx)_I‖ = {} against scale {} ({:?})", res, s, c.cert);
+        // no entry of (Lx)_I exceeds the reported norm or the bound: |entry| is exact, a square below 2^-1074 is 0
+        let top = l_i(&c.x).into_iter().fold(0.0f64, |a, v| a.max(v.abs()));
+        prop_assert!(top <= c.cert.residual_abs && top <= 1e-10 * s * (1.0 + 1e-9), "converged but an entry of (Lx)_I is {:e} against scale {:e} ({:?})", top, s, c.cert);
     }
 }

@@ -13,6 +13,7 @@
 //! Certificate (certified residual, ADR-008): relative residual ‖L_II x_I + L_IB x_B‖ / max(‖L_IB x_B‖,
 //! ‖L_II‖_bound·max(‖x_I‖, ‖x_start,I‖), tiny), the energy, iteration count, the route taken (dense Cholesky or CG), and
 //! `converged` = residual ≤ tol. A scale that overflowed to +inf certifies nothing: the residual is then NaN, not 0.
+//! The residual norm is at least its largest entry even where the squares underflow.
 pub use sheaf_cell::num::sparse::Csr;
 use sheaf_cell::num::family::Exact;
 use sheaf_cell::num::krylov::{cg, SolveTol};
@@ -105,7 +106,13 @@ pub fn harmonic_extension(delta: &Csr, boundary: &[(usize, f64)], x0: Option<&[f
         }
     }
     let lx = apply_l(delta, &x);
-    let res_abs = nrm(&restrict(&lx));
+    // squares below 2^-1074 are 0: a plain norm under 1e-150 is recomputed on entries divided by the largest one, or a
+    // residual whose entries are all tiny would read as exactly 0 and certify a non-solution (tests/adversarial.rs)
+    let r_i = restrict(&lx);
+    let res_abs = match nrm(&r_i) {
+        s if s < 1e-150 => { let m = r_i.iter().fold(0.0f64, |a, v| a.max(v.abs())); if m > 0.0 { m * nrm(&r_i.iter().map(|v| v / m).collect::<Vec<_>>()) } else { 0.0 } }
+        s => s,
+    };
     // scale includes the start: with B = ∅ the answer can be ~0 (no sections) while the start was not
     let x_start_i = x0.map_or(0.0, |v| nrm(&interior.iter().map(|&i| v[i]).collect::<Vec<_>>()));
     let scale = nrm(&b).max(lb * nrm(&restrict(&x))).max(lb * x_start_i).max(1e-300);
