@@ -189,7 +189,9 @@ impl Spectral {
 struct Rng(u64);
 impl Rng { fn next(&mut self) -> f64 { let mut s = self.0; s ^= s << 13; s ^= s >> 7; s ^= s << 17; self.0 = s; ((s >> 11) as f64) / ((1u64 << 53) as f64) - 0.5 } }
 
-fn finish(op: &HodgeOp, known: &KnownKernel, mut pairs: Vec<(f64, Vec<f64>)>, k: usize, c: f64, method: &'static str, rounds: usize, converged: bool, h0: H0Policy) -> Spectral {
+/// Sorts, cuts to k+1 and certifies `pairs`. The iteration metadata is that of a direct solve (no shift, one
+/// round, converged); an iterative caller overwrites it.
+fn finish(op: &HodgeOp, known: &KnownKernel, mut pairs: Vec<(f64, Vec<f64>)>, k: usize, method: &'static str, h0: H0Policy) -> Spectral {
     pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     pairs.truncate(k + 1);
     let lam_bound = op.norm_bound();
@@ -197,8 +199,8 @@ fn finish(op: &HodgeOp, known: &KnownKernel, mut pairs: Vec<(f64, Vec<f64>)>, k:
     let ps: Vec<EigPair> = pairs.iter().map(|(l, v)| EigPair { value: *l, residual: op.residual(v, *l) }).collect();
     let found_zero = ps.iter().filter(|p| p.value <= zero_tol).count();
     let h0_lower_bound_only = found_zero == ps.len() && ps.len() < op.n - known.dim();
-    Spectral { method, n: op.n, known_kernel_dim: known.dim(), vectors: pairs.into_iter().map(|p| p.1).collect(), pairs: ps, c_shift: c, lambda_max_bound: lam_bound,
-               zero_tol, found_zero, rounds, inner: None, sigma: 0.0, converged, h0_lower_bound_only }
+    Spectral { method, n: op.n, known_kernel_dim: known.dim(), vectors: pairs.into_iter().map(|p| p.1).collect(), pairs: ps, c_shift: 0.0, lambda_max_bound: lam_bound,
+               zero_tol, found_zero, rounds: 1, inner: None, sigma: 0.0, converged: true, h0_lower_bound_only }
 }
 
 /// Dense reference: full EVD of L, known kernel removed by projection (P L P), k+1 smallest of the rest.
@@ -212,7 +214,7 @@ pub fn smallest_dense(op: &HodgeOp, known: &KnownKernel, k: usize, h0: H0Policy)
     let evd = l.self_adjoint_eigen(Side::Lower).expect("evd");
     let m = (k + 1).min(n - known.dim());
     let pairs: Vec<(f64, Vec<f64>)> = (0..m).map(|j| (evd.S().column_vector()[j], (0..n).map(|i| evd.U()[(i, j)]).collect())).collect();
-    finish(op, known, pairs, k, 0.0, "dense-evd", 1, true, h0)
+    finish(op, known, pairs, k, "dense-evd", h0)
 }
 
 /// Matrix-free smallest k+1 eigenpairs (see module doc). Falls back to dense when n <= dense_max
@@ -279,7 +281,7 @@ pub fn smallest(op: &HodgeOp, known: &KnownKernel, o: &SpectralOpts) -> Spectral
         (evd.S().column_vector()[j], u)
     }).collect();
     let name = if o.method == Method::ShiftInvert { "lanczos((L+sigma I)^-1 via Jacobi-PCG, deflated, lock+restart, rayleigh-ritz)" } else { "lanczos(cI-L, deflated, lock+restart, rayleigh-ritz)" };
-    let mut sp = finish(op, known, pairs, o.k, c, name, rounds, converged, o.h0);
+    let mut sp = Spectral { c_shift: c, rounds, converged, ..finish(op, known, pairs, o.k, name, o.h0) };
     if o.method == Method::ShiftInvert { sp.inner = Some(inner_tot); sp.sigma = sigma; if inner_tot.2 > 1e-10 { sp.converged = false; } } // Grok v1 #7
     sp
 }

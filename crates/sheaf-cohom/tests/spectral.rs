@@ -142,6 +142,31 @@ proptest! {
         let known = KnownKernel::none(op.n);
         prop_assert_eq!(fingerprint(&smallest(&op, &known, &o)), fingerprint(&smallest(&op, &known, &o)));
     }
+
+    /// ∀ random graph sheaves with more than 140 dofs, with B = `op.norm_bound()` and default options
+    /// (shift-invert, `max_rounds` = 8) at k = 5: the Lanczos run reports `c_shift` = 1.01 B + 1e-12 and
+    /// `sigma` = sigma_rel max(B, 1) (both bit-exact), `rounds` in 1..=8 and ≥ 2 once a pair is returned
+    /// (a first round that locks anything is always followed by a restart), inner CG stats, and
+    /// `converged` = false if the worst inner residual exceeds 1e-10. The dense run on the same operator
+    /// reports `c_shift` = 0, `rounds` = 1, `converged`, `sigma` = 0 and no inner stats.
+    #[test]
+    fn spectral_reports_its_solver_metadata((s, _rnd) in arb_graph_sheaf()) {
+        let op = op_for(&s, 0);
+        prop_assume!(op.n > 140);
+        let known = KnownKernel::none(op.n);
+        let o = SpectralOpts { k: 5, dense_max: 0, ..Default::default() };
+        let bound = op.norm_bound();
+        let sp = smallest(&op, &known, &o);
+        prop_assert!(sp.method.starts_with("lanczos((L+sigma I)^-1"), "method {}", sp.method);
+        prop_assert_eq!(sp.c_shift.to_bits(), (1.01 * bound + 1e-12).to_bits());
+        prop_assert_eq!(sp.sigma.to_bits(), (o.sigma_rel * bound.max(1.0)).to_bits());
+        let min_rounds = if sp.pairs.is_empty() { 1 } else { 2 };
+        prop_assert!((min_rounds..=o.max_rounds).contains(&sp.rounds), "rounds {}", sp.rounds);
+        prop_assert!(sp.inner.is_some_and(|(_, _, worst)| worst <= 1e-10 || !sp.converged));
+        let de = smallest_dense(&op, &known, o.k, o.h0);
+        prop_assert_eq!((de.method, de.c_shift.to_bits(), de.rounds, de.converged), ("dense-evd", 0f64.to_bits(), 1, true));
+        prop_assert_eq!((de.inner, de.sigma.to_bits()), (None, 0f64.to_bits()));
+    }
 }
 
 /// Every numeric field of a `Spectral` as raw bits, so equality is exact (no tolerance, NaN-safe).
