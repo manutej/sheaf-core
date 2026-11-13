@@ -21,7 +21,8 @@ pub fn cg(apply: &dyn Fn(&[f64]) -> Vec<f64>, b: &[f64], x0: Vec<f64>, scale: f6
     let (mut iters, mut breakdown) = (0usize, false);
     while iters < tol.max_iter && rr.sqrt() > tol.rtol * scale {
         let ap = apply(&p); let pap = dot(&p, &ap);
-        if !(pap > 1e-14 * op_scale * dot(&p, &p)) { breakdown = true; break; }
+        let advances = pap > 1e-14 * op_scale * dot(&p, &p);
+        if !advances { breakdown = true; break; }
         let al = rr / pap;
         for k in 0..n { x[k] += al * p[k]; r[k] -= al * ap[k]; }
         let rr2 = dot(&r, &r); let be = rr2 / rr; rr = rr2;
