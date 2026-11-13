@@ -73,7 +73,10 @@ pub unsafe extern "C" fn sheaf_m1_coboundary(nv: i64, dv: *const i64, ne: i64, u
         if a != fu.len() || b != fv.len() { return Err(E_INPUT); }
         cell::check_edges(&dv, &edges).map_err(|_| E_INPUT)?;
         dv.iter().try_fold(0usize, |s, &k| s.checked_add(k)).ok_or(E_INPUT)?;
-        de.iter().try_fold(0usize, |s, &k| s.checked_add(k)).ok_or(E_INPUT)?;
+        // indptr has length rows+1. A sum of usize::MAX fits the fold above and then overflows that add
+        // inside coboundary (debug panic, release wrap) before any entry is written.
+        let rows = de.iter().try_fold(0usize, |s, &k| s.checked_add(k)).ok_or(E_INPUT)?;
+        if rows.checked_add(1).is_none() { return Err(E_INPUT); }
         let d = cell::coboundary(&dv, &edges);
         write_csr(&d, cap, sl_mut(out_ptr, d.nrows + 1)?, sl_mut(out_idx, cap)?, sl_mut(out_val, cap)?)
     })
@@ -200,3 +203,51 @@ pub unsafe extern "C" fn sheaf_m1_h0_dim(n: i64, nnz: i64, ptr: *const i64, idx:
 /// ABI version, so the shim refuses a stale library.
 #[no_mangle]
 pub extern "C" fn sheaf_m1_abi_version() -> i64 { 1 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Zero-stalk coboundary: maps are empty, so only `de` / `dv` admission runs.
+    fn coboundary_zero_stalk(de: [i64; 3]) -> i64 {
+        let dv = [0i64, 0];
+        let u = [0i64, 0, 0];
+        let v = [1i64, 1, 1];
+        let rows = de.iter().try_fold(0usize, |s, &k| usize::try_from(k).ok().and_then(|k| s.checked_add(k)));
+        let mut op = vec![0i64; rows.and_then(|r| r.checked_add(1)).unwrap_or(1)];
+        unsafe {
+            sheaf_m1_coboundary(2, dv.as_ptr(), 3, u.as_ptr(), v.as_ptr(), de.as_ptr(),
+                std::ptr::null(), 0, std::ptr::null(), 0, 0, op.as_mut_ptr(), std::ptr::null_mut(), std::ptr::null_mut())
+        }
+    }
+
+    /// `Σ de = usize::MAX` fits in `usize` but `nrows + 1` (the CSR indptr length) does not.
+    /// Every rotation of `(i64::MAX, i64::MAX, 1)` is that sum. The call must return `E_INPUT`.
+    #[test]
+    fn prop_coboundary_rejects_indptr_len_overflow() {
+        for rot in 0..3 {
+            let mut de = [i64::MAX, i64::MAX, 1];
+            de.rotate_left(rot);
+            let sum = de.iter().try_fold(0usize, |s, &k| s.checked_add(k as usize));
+            assert_eq!(sum, Some(usize::MAX), "{de:?}");
+            assert!(sum.unwrap().checked_add(1).is_none());
+            assert_eq!(coboundary_zero_stalk(de), E_INPUT, "rotation {rot}: {de:?}");
+        }
+        // the sum itself already does not fit: still an input error, not a panic code
+        assert_eq!(coboundary_zero_stalk([i64::MAX, i64::MAX, i64::MAX]), E_INPUT);
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(64))]
+        /// For every small edge dimension, a zero-stalk coboundary returns nnz 0 when each `de` is
+        /// non-negative and `E_INPUT` otherwise. It never returns the panic code.
+        #[test]
+        fn prop_zero_stalk_coboundary_is_total(de0 in -3i64..16, de1 in -3i64..16, de2 in -3i64..16) {
+            let rc = coboundary_zero_stalk([de0, de1, de2]);
+            prop_assert_ne!(rc, E_PANIC);
+            let ok = [de0, de1, de2].into_iter().all(|k| k >= 0);
+            prop_assert_eq!(rc, if ok { 0 } else { E_INPUT });
+        }
+    }
+}
