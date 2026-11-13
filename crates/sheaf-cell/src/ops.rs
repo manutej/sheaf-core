@@ -38,7 +38,7 @@ impl HodgeOp {
     /// diag(L) from the CSR pairs: (A A^T)_ii = sum_j A_ij^2 ; (B^T B)_ii = sum_r B_ri^2
     pub fn diagonal(&self) -> Vec<f64> {
         let mut d = vec![0.0; self.n];
-        if let Some((a, _)) = &self.down { for i in 0..a.nrows { for p in a.ptr[i]..a.ptr[i + 1] { d[i] += a.val[p] * a.val[p]; } } }
+        if let Some((a, _)) = &self.down { for (i, w) in a.ptr.windows(2).take(a.nrows).enumerate() { for p in w[0]..w[1] { d[i] += a.val[p] * a.val[p]; } } }
         if let Some((b, _)) = &self.up { for i in 0..b.nrows { for p in b.ptr[i]..b.ptr[i + 1] { d[b.idx[p]] += b.val[p] * b.val[p]; } } }
         d
     }

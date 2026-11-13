@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc c66ccb5c23ddd52e5a498a8b6d31272a799cf544147d431147d74aa102cbe39c # shrinks to a = Csr { nrows: 2, ncols: 1, ptr: [0, 0, 1], idx: [0], val: [0.0] }, y = []
+cc 21bca236ffc139ff5a05526b37d9f97145d6d1bf961fb83f0ddd60eaf0c825a1 # shrinks to n = 0, down = Some(Csr { nrows: 1, ncols: 1, ptr: [0, 1], idx: [0], val: [0.0] }), up = None

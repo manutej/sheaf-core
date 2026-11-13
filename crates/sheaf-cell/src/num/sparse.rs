@@ -17,7 +17,7 @@ impl Csr {
     }
     pub fn mul_t(&self, y: &[f64]) -> Vec<f64> {
         let mut out = vec![0.0; self.ncols];
-        for i in 0..self.nrows { for p in self.ptr[i]..self.ptr[i + 1] { out[self.idx[p]] += self.val[p] * y[i]; } }
+        for (i, w) in self.ptr.windows(2).take(self.nrows).enumerate() { for p in w[0]..w[1] { out[self.idx[p]] += self.val[p] * y[i]; } }
         out
     }
 }
